@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../core/network/peer_connection_service.dart';
 import '../core/security/encryption_service.dart';
@@ -60,6 +61,21 @@ class AppState extends ChangeNotifier {
       onMessageReceived: (decryptedText, sender) {
         _handleIncomingNetworkMessage(decryptedText, sender);
       },
+      onAttachmentReceived: ({
+        required String sender,
+        required String text,
+        required MessageType type,
+        required List<int> bytes,
+        required String fileName,
+      }) {
+        _handleIncomingNetworkAttachment(
+          sender: sender,
+          text: text,
+          type: type,
+          bytes: bytes,
+          fileName: fileName,
+        );
+      },
       onStateChanged: (state) {
         notifyListeners();
       },
@@ -98,6 +114,44 @@ class AppState extends ChangeNotifier {
       isMine: false,
       sentAt: DateTime.now(),
       burnDuration: target.defaultBurnDuration,
+    );
+
+    target.messages.add(msg);
+    target.unreadCount += 1;
+    target.isLiveConnected = true;
+    notifyListeners();
+  }
+
+  void _handleIncomingNetworkAttachment({
+    required String sender,
+    required String text,
+    required MessageType type,
+    required List<int> bytes,
+    required String fileName,
+  }) {
+    ChatConversation? target;
+    for (final c in _conversations) {
+      if (c.username.toLowerCase() == sender.toLowerCase()) {
+        target = c;
+        break;
+      }
+    }
+
+    target ??= addOrGetConversation(
+      sender,
+      secretKey: _hostingPayload?.secretKey,
+      sessionId: _hostingPayload?.sessionId,
+    );
+
+    final msg = ChatMessage(
+      id: 'net-${DateTime.now().millisecondsSinceEpoch}',
+      text: text,
+      isMine: false,
+      sentAt: DateTime.now(),
+      burnDuration: target.defaultBurnDuration,
+      type: type,
+      attachmentBytes: bytes,
+      fileName: fileName,
     );
 
     target.messages.add(msg);
@@ -210,10 +264,20 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  void sendAttachment(String conversationId, String filePath, MessageType type) {
+  Future<void> sendAttachment(String conversationId, String filePath, MessageType type) async {
     final conv = getConversationById(conversationId);
     if (conv != null) {
       final fileName = filePath.split(RegExp(r'[\\/]')).last;
+      List<int>? fileBytes;
+      try {
+        final f = File(filePath);
+        if (await f.exists()) {
+          fileBytes = await f.readAsBytes();
+        }
+      } catch (e) {
+        debugPrint('Could not read attachment bytes: $e');
+      }
+
       final msg = ChatMessage(
         id: 'msg-${DateTime.now().millisecondsSinceEpoch}',
         text: type == MessageType.image ? '📷 Image' : '📎 $fileName',
@@ -222,16 +286,28 @@ class AppState extends ChangeNotifier {
         burnDuration: conv.defaultBurnDuration,
         type: type,
         attachmentPath: filePath,
+        attachmentBytes: fileBytes,
+        fileName: fileName,
       );
       conv.messages.add(msg);
       notifyListeners();
 
       if (conv.secretKey != null &&
           _peerService.activePayload?.secretKey == conv.secretKey) {
-        _peerService.sendEncryptedMessage(
-          plainText: msg.text,
-          sender: _username,
-        );
+        if (fileBytes != null && fileBytes.isNotEmpty) {
+          await _peerService.sendEncryptedAttachment(
+            text: msg.text,
+            sender: _username,
+            type: type,
+            bytes: fileBytes,
+            fileName: fileName,
+          );
+        } else {
+          await _peerService.sendEncryptedMessage(
+            plainText: msg.text,
+            sender: _username,
+          );
+        }
       }
     }
   }

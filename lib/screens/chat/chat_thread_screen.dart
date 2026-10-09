@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
@@ -416,29 +417,53 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
     final isMine = msg.isMine;
 
     Widget content;
-    if (msg.type == MessageType.image && msg.attachmentPath != null) {
+    final hasImage = msg.type == MessageType.image &&
+        (msg.attachmentBytes != null || msg.attachmentPath != null);
+    final hasFile = msg.type == MessageType.file &&
+        (msg.attachmentBytes != null || msg.attachmentPath != null);
+
+    if (hasImage) {
+      Widget imageWidget;
+      if (msg.attachmentBytes != null && msg.attachmentBytes!.isNotEmpty) {
+        imageWidget = Image.memory(
+          Uint8List.fromList(msg.attachmentBytes!),
+          width: 200,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => const Icon(
+            Icons.broken_image_outlined,
+            size: 48,
+            color: AppColors.muted,
+          ),
+        );
+      } else {
+        imageWidget = Image.file(
+          File(msg.attachmentPath!),
+          width: 200,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => const Icon(
+            Icons.broken_image_outlined,
+            size: 48,
+            color: AppColors.muted,
+          ),
+        );
+      }
+
       content = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: Image.file(
-              File(msg.attachmentPath!),
-              width: 200,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => const Icon(
-                Icons.broken_image_outlined,
-                size: 48,
-                color: AppColors.muted,
-              ),
-            ),
+            child: imageWidget,
           ),
           const SizedBox(height: 6),
           BurnCountdownBadge(text: msg.remainingFormatted, isUrgent: isUrgent),
         ],
       );
-    } else if (msg.type == MessageType.file && msg.attachmentPath != null) {
-      final fileName = msg.attachmentPath!.split('/').last.split('\\').last;
+    } else if (hasFile) {
+      final fileName = msg.fileName ??
+          (msg.attachmentPath != null
+              ? msg.attachmentPath!.split('/').last.split('\\').last
+              : 'Encrypted Document');
       content = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

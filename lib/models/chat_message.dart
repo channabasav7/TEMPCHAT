@@ -8,6 +8,8 @@ class ChatMessage {
   final Duration burnDuration;
   final MessageType type;
   final String? attachmentPath; // local file path for image/file messages
+  final List<int>? attachmentBytes; // raw bytes for cross-device display
+  final String? fileName; // original file name
 
   ChatMessage({
     required this.id,
@@ -17,6 +19,8 @@ class ChatMessage {
     required this.burnDuration,
     this.type = MessageType.text,
     this.attachmentPath,
+    this.attachmentBytes,
+    this.fileName,
   });
 
   bool get isBurned {

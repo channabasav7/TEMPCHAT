@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../security/encryption_service.dart';
 import '../../models/qr_handshake_payload.dart';
+import '../../models/chat_message.dart';
 
 enum PeerConnectionState {
   idle,
@@ -33,6 +34,13 @@ class PeerConnectionService {
   String? get peerAlias => _peerAlias;
 
   void Function(String text, String sender)? _onMessageReceived;
+  void Function({
+    required String sender,
+    required String text,
+    required MessageType type,
+    required List<int> bytes,
+    required String fileName,
+  })? _onAttachmentReceived;
   void Function(PeerConnectionState state)? _onStateChanged;
 
   String? _localIpCache;
@@ -40,9 +48,17 @@ class PeerConnectionService {
   void setCallbacks({
     required void Function(String text, String sender) onMessageReceived,
     required void Function(PeerConnectionState state) onStateChanged,
+    void Function({
+      required String sender,
+      required String text,
+      required MessageType type,
+      required List<int> bytes,
+      required String fileName,
+    })? onAttachmentReceived,
   }) {
     _onMessageReceived = onMessageReceived;
     _onStateChanged = onStateChanged;
+    _onAttachmentReceived = onAttachmentReceived;
   }
 
   void _setState(PeerConnectionState newState) {
@@ -188,6 +204,7 @@ class PeerConnectionService {
     final wireMap = {
       'protocol': QrHandshakePayload.currentProtocol,
       'sender': sender,
+      'type': 'text',
       'payload': encryptedPayload.toJson(),
       'timestamp': DateTime.now().toIso8601String(),
     };
@@ -207,6 +224,49 @@ class PeerConnectionService {
     } catch (_) {}
   }
 
+  /// Sends file or image attachment encrypted with AES-256 over the wire
+  Future<void> sendEncryptedAttachment({
+    required String text,
+    required String sender,
+    required MessageType type,
+    required List<int> bytes,
+    required String fileName,
+  }) async {
+    if (_activePayload == null) return;
+
+    final attachmentJson = jsonEncode({
+      'text': text,
+      'type': type == MessageType.image ? 'image' : 'file',
+      'fileName': fileName,
+      'bytes': base64Encode(bytes),
+    });
+
+    final encryptedPayload = EncryptionService.encryptText(
+      attachmentJson,
+      _activePayload!.secretKey,
+    );
+
+    final wireMap = {
+      'protocol': QrHandshakePayload.currentProtocol,
+      'sender': sender,
+      'type': 'attachment',
+      'payload': encryptedPayload.toJson(),
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+
+    final wireString = jsonEncode(wireMap);
+
+    for (final client in _connectedClients) {
+      try {
+        client.add(wireString);
+      } catch (_) {}
+    }
+
+    try {
+      _socket?.add(wireString);
+    } catch (_) {}
+  }
+
   /// Decrypts raw wire data using the negotiated AES-256 key
   void _handleRawWireData(String rawString) {
     if (_activePayload == null) return;
@@ -214,6 +274,7 @@ class PeerConnectionService {
     try {
       final map = jsonDecode(rawString) as Map<String, dynamic>;
       final sender = map['sender'] as String? ?? 'Peer';
+      final msgType = map['type'] as String? ?? 'text';
       final payloadMap = map['payload'] as Map<String, dynamic>;
       final encryptedPayload = EncryptedPayload.fromJson(payloadMap);
 
@@ -223,6 +284,30 @@ class PeerConnectionService {
       );
 
       _peerAlias = sender;
+
+      if (msgType == 'attachment') {
+        try {
+          final attachData = jsonDecode(decrypted) as Map<String, dynamic>;
+          final text = attachData['text'] as String? ?? 'Attachment';
+          final typeStr = attachData['type'] as String? ?? 'file';
+          final fileName = attachData['fileName'] as String? ?? 'file';
+          final base64Bytes = attachData['bytes'] as String? ?? '';
+          final bytes = base64Decode(base64Bytes);
+          final type = typeStr == 'image' ? MessageType.image : MessageType.file;
+
+          _onAttachmentReceived?.call(
+            sender: sender,
+            text: text,
+            type: type,
+            bytes: bytes,
+            fileName: fileName,
+          );
+          return;
+        } catch (e) {
+          debugPrint('Error parsing attachment payload: $e');
+        }
+      }
+
       _onMessageReceived?.call(decrypted, sender);
     } catch (e) {
       debugPrint('Error decrypting wire data: $e');
