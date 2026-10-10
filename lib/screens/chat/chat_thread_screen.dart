@@ -10,6 +10,7 @@ import '../../models/chat_conversation.dart';
 import '../../models/chat_message.dart';
 import '../../state/app_state.dart';
 import '../../widgets/burn_countdown_badge.dart';
+import '../navigation/main_navigation_shell.dart';
 
 class ChatThreadScreen extends StatefulWidget {
   final String conversationId;
@@ -651,7 +652,18 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.text),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const MainNavigationShell(initialIndex: 0),
+                ),
+              );
+            }
+          },
         ),
         titleSpacing: 0,
         title: InkWell(

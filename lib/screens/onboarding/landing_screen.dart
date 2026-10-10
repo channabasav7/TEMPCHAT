@@ -3,6 +3,7 @@ import '../../core/theme/app_theme.dart';
 import '../../state/app_state.dart';
 import '../../widgets/custom_qr_painter.dart';
 import '../navigation/main_navigation_shell.dart';
+import '../qr/scan_qr_screen.dart';
 import 'username_setup_screen.dart';
 
 class LandingScreen extends StatelessWidget {
@@ -169,7 +170,7 @@ class LandingScreen extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const MainNavigationShell(initialIndex: 2),
+                          builder: (context) => const ScanQrScreen(),
                         ),
                       );
                     },
@@ -227,7 +228,7 @@ class LandingScreen extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const MainNavigationShell(initialIndex: 2),
+                            builder: (context) => const ScanQrScreen(),
                           ),
                         );
                       },

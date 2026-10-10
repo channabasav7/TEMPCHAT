@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../core/network/peer_connection_service.dart';
 import '../core/security/encryption_service.dart';
@@ -9,7 +10,22 @@ import '../models/connection.dart';
 import '../models/qr_handshake_payload.dart';
 
 class AppState extends ChangeNotifier {
-  String _username = '@quiet_fox42';
+  static const List<String> _defaultAliases = [
+    'ghost_runner',
+    'neon_drifter',
+    'cipher_echo',
+    'shadow_pulse',
+    'silent_hawk',
+    'zero_trace',
+    'matrix_nomad',
+    'cryptic_owl',
+    'amber_spark',
+    'quiet_fox',
+    'solar_lynx',
+    'hyper_wolf',
+  ];
+
+  late String _username;
   String _selectedTheme = 'Light';
   String _selectedTimer = '15 minutes';
 
@@ -26,6 +42,10 @@ class AppState extends ChangeNotifier {
   final PeerConnectionService _peerService = PeerConnectionService();
 
   AppState() {
+    final randName = _defaultAliases[Random().nextInt(_defaultAliases.length)];
+    final randNum = Random().nextInt(90) + 10;
+    _username = '@$randName$randNum';
+
     _initSeedData();
     _initPeerService();
     refreshHostingPayload();
