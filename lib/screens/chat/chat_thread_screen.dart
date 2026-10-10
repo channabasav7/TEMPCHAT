@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
@@ -436,7 +436,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
             color: AppColors.muted,
           ),
         );
-      } else {
+      } else if (!kIsWeb && msg.attachmentPath != null) {
         imageWidget = Image.file(
           File(msg.attachmentPath!),
           width: 200,
@@ -446,6 +446,12 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
             size: 48,
             color: AppColors.muted,
           ),
+        );
+      } else {
+        imageWidget = const Icon(
+          Icons.image_outlined,
+          size: 48,
+          color: AppColors.muted,
         );
       }
 

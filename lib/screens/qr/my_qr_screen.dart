@@ -49,49 +49,53 @@ class _MyQrScreenState extends State<MyQrScreen> {
     final fingerprint = payload?.safetyFingerprint ?? '';
 
     return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'OPTICAL ENCRYPTED KEY',
-              style: TextStyle(
-                color: AppColors.primaryOrange,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-              ),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'My QR',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Scan this code to exchange the 256-bit AES encryption key physically from screen to camera. No server ever sees this key.',
-              style: TextStyle(
-                color: AppColors.muted,
-                fontSize: 14,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 20),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'OPTICAL ENCRYPTED KEY',
+                  style: TextStyle(
+                    color: AppColors.primaryOrange,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'My QR',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Scan this code to exchange the 256-bit AES encryption key physically from screen to camera. No server ever sees this key.',
+                  style: TextStyle(
+                    color: AppColors.muted,
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 20),
 
-            // Functional QR Display Card
-            QrDisplayCard(
-              username: appState.username,
-              qrData: encodedPayload,
-              burnText: 'burns in ${appState.selectedTimer}',
-              fingerprint: fingerprint,
-              size: 210,
-            ),
-            const SizedBox(height: 20),
+                // Functional Unique QR Display Card
+                QrDisplayCard(
+                  username: appState.username,
+                  qrData: encodedPayload,
+                  burnText: 'burns in ${appState.selectedTimer}',
+                  fingerprint: fingerprint,
+                  sessionId: payload?.sessionId,
+                  size: 210,
+                ),
+                const SizedBox(height: 20),
 
             // Action Buttons
             Row(
@@ -170,7 +174,9 @@ class _MyQrScreenState extends State<MyQrScreen> {
               ),
             ),
             const SizedBox(height: 24),
-          ],
+              ],
+            ),
+          ),
         ),
       ),
     );

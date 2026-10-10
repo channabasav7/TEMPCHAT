@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../core/network/peer_connection_service.dart';
 import '../core/security/encryption_service.dart';
@@ -45,6 +46,13 @@ class AppState extends ChangeNotifier {
     final randName = _defaultAliases[Random().nextInt(_defaultAliases.length)];
     final randNum = Random().nextInt(90) + 10;
     _username = '@$randName$randNum';
+
+    // Synchronously generate a unique cryptographic handshake payload for this unique user
+    final burnSecs = getDurationFromTimer(_selectedTimer).inSeconds;
+    _hostingPayload = QrHandshakePayload.createFresh(
+      hostAlias: _username,
+      burnSeconds: burnSecs,
+    );
 
     _initSeedData();
     _initPeerService();
@@ -104,10 +112,18 @@ class AppState extends ChangeNotifier {
 
   Future<QrHandshakePayload> refreshHostingPayload() async {
     final burnSecs = getDurationFromTimer(_selectedTimer).inSeconds;
-    _hostingPayload = await _peerService.startHostingSession(
-      hostAlias: _username,
-      burnSeconds: burnSecs,
-    );
+    try {
+      _hostingPayload = await _peerService.startHostingSession(
+        hostAlias: _username,
+        burnSeconds: burnSecs,
+      );
+    } catch (e) {
+      debugPrint('Error starting hosting session, generating unique offline payload: $e');
+      _hostingPayload = QrHandshakePayload.createFresh(
+        hostAlias: _username,
+        burnSeconds: burnSecs,
+      );
+    }
     notifyListeners();
     return _hostingPayload!;
   }
@@ -289,13 +305,15 @@ class AppState extends ChangeNotifier {
     if (conv != null) {
       final fileName = filePath.split(RegExp(r'[\\/]')).last;
       List<int>? fileBytes;
-      try {
-        final f = File(filePath);
-        if (await f.exists()) {
-          fileBytes = await f.readAsBytes();
+      if (!kIsWeb) {
+        try {
+          final f = File(filePath);
+          if (await f.exists()) {
+            fileBytes = await f.readAsBytes();
+          }
+        } catch (e) {
+          debugPrint('Could not read attachment bytes: $e');
         }
-      } catch (e) {
-        debugPrint('Could not read attachment bytes: $e');
       }
 
       final msg = ChatMessage(

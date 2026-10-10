@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -40,6 +41,19 @@ class _ScanQrScreenState extends State<ScanQrScreen>
   }
 
   Future<void> _requestCameraPermission() async {
+    if (kIsWeb) {
+      if (!mounted) return;
+      setState(() {
+        _hasPermission = true;
+        _checkingPermission = false;
+      });
+      _scannerController = MobileScannerController(
+        detectionSpeed: DetectionSpeed.normal,
+        facing: CameraFacing.back,
+      );
+      return;
+    }
+
     final status = await Permission.camera.request();
     if (!mounted) return;
     if (status.isGranted) {
@@ -261,18 +275,39 @@ class _ScanQrScreenState extends State<ScanQrScreen>
                 style: TextStyle(color: AppColors.muted, fontSize: 14),
               ),
               const SizedBox(height: 28),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryOrange,
-                  foregroundColor: Colors.white,
-                  shape: const StadiumBorder(),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 24, vertical: 14),
-                ),
-                onPressed: () async {
-                  await openAppSettings();
-                },
-                child: const Text('Open Settings'),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (!kIsWeb) ...[
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.cardLight,
+                        foregroundColor: Colors.white,
+                        side: const BorderSide(color: AppColors.border),
+                        shape: const StadiumBorder(),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 14),
+                      ),
+                      onPressed: () async {
+                        await openAppSettings();
+                      },
+                      child: const Text('Open Settings'),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryOrange,
+                      foregroundColor: Colors.white,
+                      shape: const StadiumBorder(),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 14),
+                    ),
+                    onPressed: _onPastePayloadDialog,
+                    icon: const Icon(Icons.paste_rounded, size: 18),
+                    label: const Text('Paste Payload'),
+                  ),
+                ],
               ),
             ],
           ),

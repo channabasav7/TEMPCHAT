@@ -69,6 +69,10 @@ class PeerConnectionService {
   /// Discovers local IPv4 address for direct LAN P2P
   Future<String> getLocalIp() async {
     if (_localIpCache != null) return _localIpCache!;
+    if (kIsWeb) {
+      _localIpCache = '127.0.0.1';
+      return _localIpCache!;
+    }
     try {
       final interfaces = await NetworkInterface.list(
         type: InternetAddressType.IPv4,
@@ -94,10 +98,31 @@ class PeerConnectionService {
   }) async {
     await disconnect();
 
-    final ip = await getLocalIp();
-    // Bind to available port
-    _localServer = await HttpServer.bind(InternetAddress.anyIPv4, 0);
-    final port = _localServer!.port;
+    String? ip;
+    int? port;
+
+    if (!kIsWeb) {
+      try {
+        ip = await getLocalIp();
+        // Bind to available port
+        _localServer = await HttpServer.bind(InternetAddress.anyIPv4, 0);
+        port = _localServer!.port;
+
+        // Listen for incoming WebSocket connections
+        _localServer!.listen((HttpRequest request) async {
+          if (WebSocketTransformer.isUpgradeRequest(request)) {
+            final socket = await WebSocketTransformer.upgrade(request);
+            _handleIncomingClientSocket(socket);
+          } else {
+            request.response
+              ..statusCode = HttpStatus.notFound
+              ..close();
+          }
+        });
+      } catch (e) {
+        debugPrint('Direct socket server not available on this platform/network: $e');
+      }
+    }
 
     final payload = QrHandshakePayload.createFresh(
       hostAlias: hostAlias,
@@ -109,18 +134,6 @@ class PeerConnectionService {
     _activePayload = payload;
     _peerAlias = null;
     _setState(PeerConnectionState.hosting);
-
-    // Listen for incoming WebSocket connections
-    _localServer!.listen((HttpRequest request) async {
-      if (WebSocketTransformer.isUpgradeRequest(request)) {
-        final socket = await WebSocketTransformer.upgrade(request);
-        _handleIncomingClientSocket(socket);
-      } else {
-        request.response
-          ..statusCode = HttpStatus.notFound
-          ..close();
-      }
-    });
 
     return payload;
   }
@@ -155,8 +168,8 @@ class PeerConnectionService {
     _peerAlias = payload.hostAlias;
     _setState(PeerConnectionState.connecting);
 
-    // Try direct LAN P2P connection first
-    if (payload.localIp != null && payload.localPort != null) {
+    // Try direct LAN P2P connection first if on non-web platform
+    if (!kIsWeb && payload.localIp != null && payload.localPort != null) {
       try {
         final uri = Uri.parse('ws://${payload.localIp}:${payload.localPort}');
         final socket = await WebSocket.connect(
