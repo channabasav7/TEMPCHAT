@@ -89,7 +89,7 @@ class _ScanQrScreenState extends State<ScanQrScreen>
       _isProcessing = false;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Invalid QR: Missing TempChat cryptographic payload.'),
             backgroundColor: AppColors.accentRed,
             duration: Duration(seconds: 2),
@@ -127,21 +127,27 @@ class _ScanQrScreenState extends State<ScanQrScreen>
 
   void _onPastePayloadDialog() {
     final controller = TextEditingController();
+    final cardColor = Theme.of(context).cardColor;
+    final textColor = Theme.of(context).colorScheme.onSurface;
+    final mutedColor = Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6);
+    final dimColor = Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4);
+    final borderColor = Theme.of(context).dividerColor;
+    final cardLightColor = cardColor.withValues(alpha: 0.8);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.card,
+        backgroundColor: cardColor,
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        title: Row(
           children: [
             Icon(Icons.lock_open_rounded,
                 color: AppColors.primaryOrange, size: 20),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             Text(
               'Paste Optical Payload',
               style: TextStyle(
-                  color: AppColors.text,
+                  color: textColor,
                   fontSize: 17,
                   fontWeight: FontWeight.bold),
             ),
@@ -151,34 +157,34 @@ class _ScanQrScreenState extends State<ScanQrScreen>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Paste the tempchat:// payload copied from another device:',
-              style: TextStyle(color: AppColors.muted, fontSize: 13),
+              style: TextStyle(color: mutedColor, fontSize: 13),
             ),
             const SizedBox(height: 12),
             Container(
               decoration: BoxDecoration(
-                color: AppColors.cardLight,
+                color: cardLightColor,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: borderColor),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 14),
               child: TextField(
                 controller: controller,
                 maxLines: 2,
-                style: const TextStyle(color: AppColors.text, fontSize: 12),
-                decoration: const InputDecoration(
+                style: TextStyle(color: textColor, fontSize: 12),
+                decoration: InputDecoration(
                   hintText: 'tempchat://...',
-                  hintStyle: TextStyle(color: AppColors.dim),
+                  hintStyle: TextStyle(color: dimColor),
                   border: InputBorder.none,
                 ),
               ),
             ),
             const SizedBox(height: 14),
-            const Text(
+            Text(
               'Or test with a simulated peer:',
               style: TextStyle(
-                  color: AppColors.dim,
+                  color: dimColor,
                   fontSize: 11,
                   fontWeight: FontWeight.bold),
             ),
@@ -189,10 +195,10 @@ class _ScanQrScreenState extends State<ScanQrScreen>
                   .map((peer) {
                 return ActionChip(
                   label: Text(peer),
-                  backgroundColor: AppColors.cardLight,
-                  labelStyle: const TextStyle(
+                  backgroundColor: cardLightColor,
+                  labelStyle: TextStyle(
                       color: AppColors.primaryOrange, fontSize: 11),
-                  side: const BorderSide(color: AppColors.border),
+                  side: BorderSide(color: borderColor),
                   onPressed: () {
                     final simulatedPayload =
                         QrHandshakePayload.createFresh(
@@ -209,8 +215,8 @@ class _ScanQrScreenState extends State<ScanQrScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel',
-                style: TextStyle(color: AppColors.muted)),
+            child: Text('Cancel',
+                style: TextStyle(color: mutedColor)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -239,6 +245,12 @@ class _ScanQrScreenState extends State<ScanQrScreen>
     _handleScannedString(simulated.toEncodedString());
   }
 
+  Color get _cardColor => Theme.of(context).cardColor;
+  Color get _borderColor => Theme.of(context).dividerColor;
+  Color get _textColor => Theme.of(context).colorScheme.onSurface;
+  Color get _mutedColor => Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6);
+  Color get _primaryOrange => AppColors.primaryOrange;
+
   @override
   Widget build(BuildContext context) {
     const scanBoxSize = 250.0;
@@ -258,21 +270,21 @@ class _ScanQrScreenState extends State<ScanQrScreen>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.camera_alt_outlined,
-                  size: 64, color: AppColors.muted),
+              Icon(Icons.camera_alt_outlined,
+                  size: 64, color: _mutedColor),
               const SizedBox(height: 24),
-              const Text(
+              Text(
                 'Camera access required',
                 style: TextStyle(
-                    color: AppColors.text,
+                    color: _textColor,
                     fontSize: 20,
                     fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'Please enable camera permission in Settings to scan QR codes.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.muted, fontSize: 14),
+                style: TextStyle(color: _mutedColor, fontSize: 14),
               ),
               const SizedBox(height: 28),
               Row(
@@ -281,9 +293,9 @@ class _ScanQrScreenState extends State<ScanQrScreen>
                   if (!kIsWeb) ...[
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.cardLight,
-                        foregroundColor: Colors.white,
-                        side: const BorderSide(color: AppColors.border),
+                        backgroundColor: _cardColor.withValues(alpha: 0.8),
+                        foregroundColor: _textColor,
+                        side: BorderSide(color: _borderColor),
                         shape: const StadiumBorder(),
                         padding: const EdgeInsets.symmetric(
                             horizontal: 20, vertical: 14),
@@ -297,7 +309,7 @@ class _ScanQrScreenState extends State<ScanQrScreen>
                   ],
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryOrange,
+                      backgroundColor: _primaryOrange,
                       foregroundColor: Colors.white,
                       shape: const StadiumBorder(),
                       padding: const EdgeInsets.symmetric(
@@ -327,17 +339,17 @@ class _ScanQrScreenState extends State<ScanQrScreen>
                 child: InkWell(
                   onTap: () => Navigator.pop(context),
                   borderRadius: BorderRadius.circular(8),
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.arrow_back, color: AppColors.text, size: 20),
-                        SizedBox(width: 8),
+                        Icon(Icons.arrow_back, color: _textColor, size: 20),
+                        const SizedBox(width: 8),
                         Text(
                           'Back',
                           style: TextStyle(
-                            color: AppColors.text,
+                            color: _textColor,
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),
@@ -347,29 +359,29 @@ class _ScanQrScreenState extends State<ScanQrScreen>
                   ),
                 ),
               ),
-            const Text(
+            Text(
               'OPTICAL HANDSHAKE',
               style: TextStyle(
-                color: AppColors.primaryOrange,
+                color: _primaryOrange,
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.2,
               ),
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Scan QR',
               style: TextStyle(
-                color: AppColors.text,
+                color: _textColor,
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Point your camera at a TempChat QR code to exchange the 256-bit AES encryption key.',
               style: TextStyle(
-                color: AppColors.muted,
+                color: _mutedColor,
                 fontSize: 14,
                 height: 1.4,
               ),
@@ -382,9 +394,9 @@ class _ScanQrScreenState extends State<ScanQrScreen>
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 24),
                 decoration: BoxDecoration(
-                  color: AppColors.card,
+                  color: _cardColor,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: _borderColor),
                 ),
                 child: Column(
                   children: [
@@ -453,10 +465,10 @@ class _ScanQrScreenState extends State<ScanQrScreen>
                                     child: Container(
                                       height: 2,
                                       decoration: BoxDecoration(
-                                        color: AppColors.primaryOrange,
+                                        color: _primaryOrange,
                                         boxShadow: [
                                           BoxShadow(
-                                            color: AppColors.primaryOrange
+                                            color: _primaryOrange
                                                 .withValues(alpha: 0.8),
                                             blurRadius: 8,
                                             spreadRadius: 2,
@@ -485,8 +497,8 @@ class _ScanQrScreenState extends State<ScanQrScreen>
                                   ? Icons.flash_on
                                   : Icons.flash_off,
                               color: _torchEnabled
-                                  ? AppColors.primaryOrange
-                                  : AppColors.muted,
+                                  ? _primaryOrange
+                                  : _mutedColor,
                             ),
                             onPressed: () {
                               setState(
@@ -501,9 +513,9 @@ class _ScanQrScreenState extends State<ScanQrScreen>
                           label: const Text('Test Scan',
                               style: TextStyle(fontSize: 12)),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.cardLight,
-                            foregroundColor: AppColors.text,
-                            side: const BorderSide(color: AppColors.border),
+                            backgroundColor: _cardColor.withValues(alpha: 0.8),
+                            foregroundColor: _textColor,
+                            side: BorderSide(color: _borderColor),
                             elevation: 0,
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 14, vertical: 10),
@@ -528,9 +540,9 @@ class _ScanQrScreenState extends State<ScanQrScreen>
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 style: OutlinedButton.styleFrom(
-                  backgroundColor: AppColors.card,
-                  foregroundColor: AppColors.text,
-                  side: const BorderSide(color: AppColors.border),
+                  backgroundColor: _cardColor,
+                  foregroundColor: _textColor,
+                  side: BorderSide(color: _borderColor),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: const StadiumBorder(),
                 ),

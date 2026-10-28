@@ -45,50 +45,42 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
         index: _currentIndex,
         children: pages,
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: AppColors.bg,
-          border: Border(top: BorderSide(color: AppColors.border, width: 1)),
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildNavItem(0, Icons.chat_bubble_outline, 'Chats'),
-            _buildNavItem(1, Icons.qr_code_2_outlined, 'My QR'),
-            _buildNavItem(2, Icons.qr_code_scanner_outlined, 'Scan'),
-            _buildNavItem(3, Icons.people_outline, 'Connections'),
-            _buildNavItem(4, Icons.settings_outlined, 'Settings'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem(int index, IconData icon, String label) {
-    final isSelected = _currentIndex == index;
-    final color = isSelected ? Colors.white : AppColors.dim;
-
-    return InkWell(
-      onTap: () => _onTabSelected(index),
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: isSelected ? AppColors.primaryOrange : color, size: 20),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: 10,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-              ),
-            ),
-          ],
-        ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _currentIndex,
+        onDestinationSelected: _onTabSelected,
+        backgroundColor: AppColors.bg,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        height: 72,
+        indicatorColor: AppColors.primaryOrange.withValues(alpha: 0.18),
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.chat_bubble_outline),
+            selectedIcon: Icon(Icons.chat_bubble),
+            label: 'Chats',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.qr_code_2_outlined),
+            selectedIcon: Icon(Icons.qr_code_2),
+            label: 'My QR',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.qr_code_scanner_outlined),
+            selectedIcon: Icon(Icons.qr_code_scanner),
+            label: 'Scan',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.people_outline),
+            selectedIcon: Icon(Icons.people),
+            label: 'People',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
+        ],
       ),
     );
   }

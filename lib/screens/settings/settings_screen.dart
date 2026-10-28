@@ -243,6 +243,29 @@ class SettingsScreen extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(height: 28),
+
+            // APPEARANCE
+            _buildSectionHeader('APPEARANCE'),
+            const SizedBox(height: 10),
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.card,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                children: [
+                  _buildDropdownTile(
+                    title: 'Theme',
+                    subtitle: 'Choose light, dark, or system default.',
+                    value: appState.selectedTheme,
+                    items: const ['System', 'Light', 'Dark'],
+                    onChanged: appState.setTheme,
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 32),
 
             // Wipe
@@ -362,6 +385,79 @@ class SettingsScreen extends StatelessWidget {
         fontSize: 11,
         fontWeight: FontWeight.bold,
         letterSpacing: 1.1,
+      ),
+    );
+  }
+
+  Widget _buildDropdownTile({
+    required String title,
+    required String subtitle,
+    required String value,
+    required List<String> items,
+    required ValueChanged<String> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: AppColors.text,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: const TextStyle(color: AppColors.muted, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.cardLight,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: value,
+                dropdownColor: AppColors.card,
+                icon: const Padding(
+                  padding: EdgeInsets.only(left: 6),
+                  child: Icon(
+                    Icons.keyboard_arrow_down,
+                    color: AppColors.muted,
+                    size: 18,
+                  ),
+                ),
+                style: const TextStyle(
+                  color: AppColors.text,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+                onChanged: (String? val) {
+                  if (val != null) onChanged(val);
+                },
+                items: items.map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

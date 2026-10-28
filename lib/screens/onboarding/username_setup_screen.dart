@@ -72,6 +72,13 @@ class _UsernameSetupScreenState extends State<UsernameSetupScreen> {
     );
   }
 
+  Color get _bgColor => Theme.of(context).scaffoldBackgroundColor;
+  Color get _cardColor => Theme.of(context).cardColor;
+  Color get _borderColor => Theme.of(context).dividerColor;
+  Color get _textColor => Theme.of(context).colorScheme.onSurface;
+  Color get _mutedColor => Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6);
+  Color get _dimColor => Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4);
+
   @override
   Widget build(BuildContext context) {
     final initial = _controller.text.trim().isNotEmpty
@@ -79,11 +86,11 @@ class _UsernameSetupScreenState extends State<UsernameSetupScreen> {
         : '?';
 
     return Scaffold(
-      backgroundColor: AppColors.darkBg,
+      backgroundColor: _bgColor,
       appBar: AppBar(
-        backgroundColor: AppColors.darkBg,
+        backgroundColor: _bgColor,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: _textColor),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -93,7 +100,7 @@ class _UsernameSetupScreenState extends State<UsernameSetupScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'EPHEMERAL IDENTITY',
                 style: TextStyle(
                   color: AppColors.primaryOrange,
@@ -103,20 +110,20 @@ class _UsernameSetupScreenState extends State<UsernameSetupScreen> {
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'Pick your alias.',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: _textColor,
                   fontSize: 34,
                   fontWeight: FontWeight.w800,
                   height: 1.1,
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'No email, no phone, no identity attached. Generate a random pseudonym or customize your disposable handle.',
                 style: TextStyle(
-                  color: AppColors.textMuted,
+                  color: _mutedColor,
                   fontSize: 14,
                   height: 1.5,
                 ),
@@ -144,15 +151,15 @@ class _UsernameSetupScreenState extends State<UsernameSetupScreen> {
                         Container(
                           width: 74,
                           height: 74,
-                          decoration: const BoxDecoration(
-                            color: AppColors.cardBg,
+                          decoration: BoxDecoration(
+                            color: _cardColor,
                             shape: BoxShape.circle,
                           ),
                           child: Center(
                             child: Text(
                               initial,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: _textColor,
                                 fontSize: 32,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -164,8 +171,8 @@ class _UsernameSetupScreenState extends State<UsernameSetupScreen> {
                     const SizedBox(height: 12),
                     Text(
                       '@${_controller.text.trim().replaceAll('@', '')}',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: _textColor,
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
                       ),
@@ -178,14 +185,14 @@ class _UsernameSetupScreenState extends State<UsernameSetupScreen> {
               // Username input field
               Container(
                 decoration: BoxDecoration(
-                  color: AppColors.cardBg,
+                  color: _cardColor,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.borderDark),
+                  border: Border.all(color: _borderColor),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 child: Row(
                   children: [
-                    const Text(
+                    Text(
                       '@',
                       style: TextStyle(
                         color: AppColors.primaryOrange,
@@ -198,21 +205,21 @@ class _UsernameSetupScreenState extends State<UsernameSetupScreen> {
                       child: TextField(
                         controller: _controller,
                         onChanged: (_) => setState(() {}),
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: _textColor,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: 'handle',
-                          hintStyle: TextStyle(color: AppColors.textDim),
+                          hintStyle: TextStyle(color: _dimColor),
                           border: InputBorder.none,
                         ),
                       ),
                     ),
                     IconButton(
                       tooltip: 'Random handle',
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.casino_outlined,
                         color: AppColors.primaryOrange,
                       ),
@@ -224,10 +231,10 @@ class _UsernameSetupScreenState extends State<UsernameSetupScreen> {
               const SizedBox(height: 28),
 
               // Burn timer preference selection
-              const Text(
+              Text(
                 'DEFAULT MESSAGE BURN TIMER',
                 style: TextStyle(
-                  color: AppColors.textMuted,
+                  color: _mutedColor,
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.1,
@@ -246,16 +253,16 @@ class _UsernameSetupScreenState extends State<UsernameSetupScreen> {
                       if (selected) setState(() => _selectedTimer = opt);
                     },
                     selectedColor: AppColors.primaryOrange,
-                    backgroundColor: AppColors.cardBg,
+                    backgroundColor: _cardColor,
                     labelStyle: TextStyle(
-                      color: isSel ? Colors.white : AppColors.textMuted,
+                      color: isSel ? Colors.white : _mutedColor,
                       fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
                       fontSize: 13,
                     ),
                     side: BorderSide(
                       color: isSel
                           ? AppColors.primaryOrange
-                          : AppColors.borderDark,
+                          : _borderColor,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),

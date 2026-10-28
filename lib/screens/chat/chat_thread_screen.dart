@@ -186,17 +186,11 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
 
   Future<void> _pickFile() async {
     try {
-      final result = await FilePicker.platform.pickFiles(
-        allowMultiple: false,
-        withData: false,
-      );
-      if (result != null &&
-          result.files.isNotEmpty &&
-          result.files.single.path != null &&
-          mounted) {
+      final result = await FilePicker.pickFile();
+      if (result?.path != null && mounted) {
         AppStateScope.of(context).sendAttachment(
           widget.conversationId,
-          result.files.single.path!,
+          result!.path!,
           MessageType.file,
         );
         _scrollToBottom();
@@ -518,6 +512,23 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
+              if (isMine) ...[
+                const Icon(
+                  Icons.done_all_rounded,
+                  size: 13,
+                  color: Colors.white70,
+                ),
+                const SizedBox(width: 3),
+                const Text(
+                  'Encrypted',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(width: 6),
+              ],
               BurnCountdownBadge(text: msg.remainingFormatted, isUrgent: isUrgent),
             ],
           ),

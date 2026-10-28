@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:viora/core/security/encryption_service.dart';
 import 'package:viora/models/qr_handshake_payload.dart';
@@ -24,7 +26,10 @@ void main() {
       final keyA = EncryptionService.generateSessionKey();
       final keyB = EncryptionService.generateSessionKey();
 
-      final encrypted = EncryptionService.encryptText('Classified information', keyA);
+      final encrypted = EncryptionService.encryptText(
+        'Classified information',
+        keyA,
+      );
       final failedAttempt = EncryptionService.decryptText(encrypted, keyB);
 
       expect(failedAttempt.contains('Decryption Error'), true);
@@ -65,6 +70,22 @@ void main() {
     test('Reject invalid QR strings gracefully', () {
       expect(QrHandshakePayload.tryParse('invalid_random_string'), isNull);
       expect(QrHandshakePayload.tryParse('tempchat://not_base64!'), isNull);
+    });
+
+    test('Reject unsupported protocols and invalid burn durations', () {
+      final basePayload = QrHandshakePayload.createFresh(
+        hostAlias: '@peer_01',
+        burnSeconds: 900,
+      ).toMap();
+
+      final unsupported = {...basePayload, 'p': 'tempchat-v0'};
+      final noBurn = {...basePayload, 'b': 0};
+
+      String encode(Map<String, dynamic> value) =>
+          'tempchat://${base64Url.encode(utf8.encode(jsonEncode(value)))}';
+
+      expect(QrHandshakePayload.tryParse(encode(unsupported)), isNull);
+      expect(QrHandshakePayload.tryParse(encode(noBurn)), isNull);
     });
   });
 }

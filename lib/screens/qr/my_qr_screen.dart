@@ -23,7 +23,7 @@ class _MyQrScreenState extends State<MyQrScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Generated fresh AES-256 key and disposable QR code.'),
-          backgroundColor: AppColors.cardLight,
+          backgroundColor: AppColors.card,
           duration: Duration(seconds: 2),
         ),
       );
@@ -35,11 +35,16 @@ class _MyQrScreenState extends State<MyQrScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Copied encrypted session payload to clipboard!'),
-        backgroundColor: AppColors.cardLight,
+        backgroundColor: AppColors.card,
         duration: Duration(seconds: 2),
       ),
     );
   }
+
+  Color get _cardColor => Theme.of(context).cardColor;
+  Color get _borderColor => Theme.of(context).dividerColor;
+  Color get _textColor => Theme.of(context).colorScheme.onSurface;
+  Color get _mutedColor => Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6);
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +62,7 @@ class _MyQrScreenState extends State<MyQrScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'OPTICAL ENCRYPTED KEY',
                   style: TextStyle(
                     color: AppColors.primaryOrange,
@@ -67,19 +72,19 @@ class _MyQrScreenState extends State<MyQrScreen> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   'My QR',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: _textColor,
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
+                Text(
                   'Scan this code to exchange the 256-bit AES encryption key physically from screen to camera. No server ever sees this key.',
                   style: TextStyle(
-                    color: AppColors.muted,
+                    color: _mutedColor,
                     fontSize: 14,
                     height: 1.4,
                   ),
@@ -112,9 +117,9 @@ class _MyQrScreenState extends State<MyQrScreen> {
                         : const Icon(Icons.refresh_rounded, size: 18),
                     label: const Text('New Key & QR'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.cardBg,
-                      foregroundColor: Colors.white,
-                      side: const BorderSide(color: AppColors.border),
+                      backgroundColor: _cardColor,
+                      foregroundColor: _textColor,
+                      side: BorderSide(color: _borderColor),
                       shape: const StadiumBorder(),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       elevation: 0,
@@ -144,9 +149,9 @@ class _MyQrScreenState extends State<MyQrScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.card,
+                color: _cardColor,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: _borderColor),
               ),
               child: Column(
                 children: [
@@ -156,14 +161,14 @@ class _MyQrScreenState extends State<MyQrScreen> {
                     subtitle:
                         'The AES-256 session key is transferred optically via light photons from screen to camera. Immune to remote MITM attacks.',
                   ),
-                  const Divider(color: AppColors.border, height: 24),
+                  Divider(color: _borderColor, height: 24),
                   _buildSecurityRow(
                     icon: Icons.lock_outline,
                     title: 'End-to-End Cryptography',
                     subtitle:
                         'Every single message is encrypted client-side with a fresh random IV. Relay nodes only see encrypted ciphertext.',
                   ),
-                  const Divider(color: AppColors.border, height: 24),
+                  Divider(color: _borderColor, height: 24),
                   _buildSecurityRow(
                     icon: Icons.local_fire_department_outlined,
                     title: 'Volatile Ephemeral RAM Storage',
@@ -198,8 +203,8 @@ class _MyQrScreenState extends State<MyQrScreen> {
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: _textColor,
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
                 ),
@@ -207,8 +212,8 @@ class _MyQrScreenState extends State<MyQrScreen> {
               const SizedBox(height: 3),
               Text(
                 subtitle,
-                style: const TextStyle(
-                  color: AppColors.muted,
+                style: TextStyle(
+                  color: _mutedColor,
                   fontSize: 12,
                   height: 1.4,
                 ),

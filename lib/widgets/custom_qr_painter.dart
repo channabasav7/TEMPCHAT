@@ -89,9 +89,9 @@ class QrDisplayCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.cardBg,
+        color: AppColors.card,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.borderDark),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         children: [
@@ -124,7 +124,7 @@ class QrDisplayCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.black38,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.borderDark),
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: Text(
                   burnText,
@@ -219,9 +219,9 @@ class QrDisplayCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: AppColors.darkBg,
+                    color: AppColors.bg,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.borderDark),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -231,7 +231,7 @@ class QrDisplayCard extends StatelessWidget {
                       Text(
                         'Session: ${sessionId!.length > 8 ? sessionId!.substring(0, 8) : sessionId}',
                         style: const TextStyle(
-                          color: AppColors.textDim,
+                          color: AppColors.muted,
                           fontSize: 11,
                           fontFamily: 'monospace',
                         ),
@@ -243,9 +243,9 @@ class QrDisplayCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: AppColors.darkBg,
+                    color: AppColors.bg,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.borderDark),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -255,7 +255,7 @@ class QrDisplayCard extends StatelessWidget {
                       Text(
                         'AES-256: $fingerprint',
                         style: const TextStyle(
-                          color: AppColors.textDim,
+                          color: AppColors.muted,
                           fontSize: 11,
                           fontFamily: 'monospace',
                         ),

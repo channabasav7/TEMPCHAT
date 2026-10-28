@@ -40,7 +40,9 @@ class QrHandshakePayload {
     return QrHandshakePayload(
       protocol: currentProtocol,
       sessionId: sessionId,
-      hostAlias: hostAlias.trim().startsWith('@') ? hostAlias.trim() : '@${hostAlias.trim()}',
+      hostAlias: hostAlias.trim().startsWith('@')
+          ? hostAlias.trim()
+          : '@${hostAlias.trim()}',
       secretKey: secretKey,
       relayRoom: relayRoom,
       burnSeconds: burnSeconds,
@@ -51,16 +53,16 @@ class QrHandshakePayload {
   }
 
   Map<String, dynamic> toMap() => {
-        'p': protocol,
-        's': sessionId,
-        'a': hostAlias,
-        'k': secretKey,
-        'r': relayRoom,
-        'b': burnSeconds,
-        't': createdAt,
-        if (localIp != null) 'ip': localIp,
-        if (localPort != null) 'pt': localPort,
-      };
+    'p': protocol,
+    's': sessionId,
+    'a': hostAlias,
+    'k': secretKey,
+    'r': relayRoom,
+    'b': burnSeconds,
+    't': createdAt,
+    if (localIp != null) 'ip': localIp,
+    if (localPort != null) 'pt': localPort,
+  };
 
   /// Encodes into a compact URI string suitable for QR codes and deep links
   String toEncodedString() {
@@ -91,17 +93,26 @@ class QrHandshakePayload {
       try {
         final map = jsonDecode(jsonStr) as Map<String, dynamic>;
         if (map['k'] != null && map['s'] != null) {
+          final protocol = map['p'] as String? ?? currentProtocol;
+          final burnSeconds = (map['b'] as num?)?.toInt() ?? 900;
+          final hostAlias = map['a'] as String? ?? '@anonymous';
+          if (protocol != currentProtocol ||
+              burnSeconds <= 0 ||
+              !RegExp(r'^@[A-Za-z0-9_]{1,31}$').hasMatch(hostAlias)) {
+            return null;
+          }
           return QrHandshakePayload(
-            protocol: map['p'] as String? ?? currentProtocol,
+            protocol: protocol,
             sessionId: map['s'] as String,
-            hostAlias: map['a'] as String? ?? '@anonymous',
+            hostAlias: hostAlias,
             secretKey: map['k'] as String,
-            relayRoom: map['r'] as String? ??
+            relayRoom:
+                map['r'] as String? ??
                 EncryptionService.deriveRelayRoomId(
                   map['s'] as String,
                   map['k'] as String,
                 ),
-            burnSeconds: (map['b'] as num?)?.toInt() ?? 900,
+            burnSeconds: burnSeconds,
             createdAt: (map['t'] as num?)?.toInt() ?? 0,
             localIp: map['ip'] as String?,
             localPort: (map['pt'] as num?)?.toInt(),
@@ -109,12 +120,12 @@ class QrHandshakePayload {
         }
       } catch (_) {}
 
-      // 3. Fallback: If it looks like a username alias (e.g. "@alice" or "alice"),
-      // auto-generate a fresh ephemeral AES-256 session for this peer!
-      final aliasCandidate = clean.replaceAll(RegExp(r'[^\w@]'), '');
-      if (aliasCandidate.isNotEmpty && aliasCandidate.length <= 32) {
+      // 3. Fallback: only explicit @aliases are accepted as simulated peers.
+      // Bare arbitrary text must not be treated as a valid handshake.
+      final aliasPattern = RegExp(r'^@[A-Za-z0-9_]{1,31}$');
+      if (aliasPattern.hasMatch(clean)) {
         return QrHandshakePayload.createFresh(
-          hostAlias: aliasCandidate,
+          hostAlias: clean,
           burnSeconds: 900,
         );
       }

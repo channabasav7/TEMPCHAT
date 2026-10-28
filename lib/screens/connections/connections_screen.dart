@@ -19,28 +19,31 @@ class ConnectionsScreen extends StatelessWidget {
   }
 
   void _terminateConnection(BuildContext context, ConnectionItem conn) {
+    final cardColor = Theme.of(context).cardColor;
+    final textColor = Theme.of(context).colorScheme.onSurface;
+    final mutedColor = Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.card,
+        backgroundColor: cardColor,
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Disconnect ${conn.username}?',
-          style: const TextStyle(
-              color: AppColors.text,
+          style: TextStyle(
+              color: textColor,
               fontSize: 18,
               fontWeight: FontWeight.bold),
         ),
-        content: const Text(
+        content: Text(
           'This will immediately revoke their access to your ephemeral channel.',
-          style: TextStyle(color: AppColors.muted, fontSize: 13),
+          style: TextStyle(color: mutedColor, fontSize: 13),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel',
-                style: TextStyle(color: AppColors.muted)),
+            child: Text('Cancel',
+                style: TextStyle(color: mutedColor)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -64,10 +67,20 @@ class ConnectionsScreen extends StatelessWidget {
     );
   }
 
+  Color get _primaryOrange => AppColors.primaryOrange;
+  Color get _accentGreen => AppColors.accentGreen;
+
   @override
   Widget build(BuildContext context) {
     final appState = AppStateScope.of(context);
     final connections = appState.connections;
+
+    final cardColor = Theme.of(context).cardColor;
+    final borderColor = Theme.of(context).dividerColor;
+    final textColor = Theme.of(context).colorScheme.onSurface;
+    final mutedColor = Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6);
+    final dimColor = Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4);
+    final cardLightColor = cardColor.withValues(alpha: 0.8);
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -76,29 +89,29 @@ class ConnectionsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'PEER MESH',
               style: TextStyle(
-                color: AppColors.primaryOrange,
+                color: _primaryOrange,
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.2,
               ),
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Connections',
               style: TextStyle(
-                color: AppColors.text,
+                color: textColor,
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Active ephemeral peers established via QR handshake. Links dissolve automatically.',
               style: TextStyle(
-                color: AppColors.muted,
+                color: mutedColor,
                 fontSize: 14,
                 height: 1.4,
               ),
@@ -107,19 +120,19 @@ class ConnectionsScreen extends StatelessWidget {
 
             Container(
               decoration: BoxDecoration(
-                color: AppColors.card,
+                color: cardColor,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: borderColor),
               ),
               child: connections.isEmpty
-                  ? const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 36),
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 36),
                       child: Center(
                         child: Text(
                           'No active connections.\nScan a QR to connect with someone.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                              color: AppColors.muted, fontSize: 14),
+                              color: mutedColor, fontSize: 14),
                         ),
                       ),
                     )
@@ -128,7 +141,7 @@ class ConnectionsScreen extends StatelessWidget {
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: connections.length,
                       separatorBuilder: (context, index) =>
-                          const Divider(color: AppColors.border, height: 1),
+                          Divider(color: borderColor, height: 1),
                       itemBuilder: (context, index) {
                         final conn = connections[index];
                         return Padding(
@@ -141,11 +154,11 @@ class ConnectionsScreen extends StatelessWidget {
                                 children: [
                                   CircleAvatar(
                                     radius: 20,
-                                    backgroundColor: AppColors.cardLight,
+                                    backgroundColor: cardLightColor,
                                     child: Text(
                                       conn.avatarInitial,
-                                      style: const TextStyle(
-                                        color: AppColors.text,
+                                      style: TextStyle(
+                                        color: textColor,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 15,
                                       ),
@@ -159,11 +172,10 @@ class ConnectionsScreen extends StatelessWidget {
                                         width: 10,
                                         height: 10,
                                         decoration: BoxDecoration(
-                                          color: AppColors.accentGreen,
+                                          color: _accentGreen,
                                           shape: BoxShape.circle,
                                           border: Border.all(
-                                              color: AppColors.card,
-                                              width: 2),
+                                              color: cardColor, width: 2),
                                         ),
                                       ),
                                     ),
@@ -178,8 +190,8 @@ class ConnectionsScreen extends StatelessWidget {
                                   children: [
                                     Text(
                                       conn.username,
-                                      style: const TextStyle(
-                                        color: AppColors.text,
+                                      style: TextStyle(
+                                        color: textColor,
                                         fontSize: 15,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -187,8 +199,8 @@ class ConnectionsScreen extends StatelessWidget {
                                     const SizedBox(height: 3),
                                     Text(
                                       conn.formattedRemaining,
-                                      style: const TextStyle(
-                                        color: AppColors.dim,
+                                      style: TextStyle(
+                                        color: dimColor,
                                         fontSize: 12,
                                       ),
                                     ),
@@ -198,9 +210,9 @@ class ConnectionsScreen extends StatelessWidget {
 
                               IconButton(
                                 tooltip: 'Chat',
-                                icon: const Icon(
+                                icon: Icon(
                                   Icons.chat_bubble_outline_rounded,
-                                  color: AppColors.primaryOrange,
+                                  color: _primaryOrange,
                                   size: 20,
                                 ),
                                 onPressed: () =>
@@ -208,9 +220,9 @@ class ConnectionsScreen extends StatelessWidget {
                               ),
                               IconButton(
                                 tooltip: 'Revoke connection',
-                                icon: const Icon(
+                                icon: Icon(
                                   Icons.link_off_rounded,
-                                  color: AppColors.muted,
+                                  color: mutedColor,
                                   size: 20,
                                 ),
                                 onPressed: () =>

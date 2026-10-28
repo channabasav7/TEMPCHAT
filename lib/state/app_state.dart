@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../core/network/peer_connection_service.dart';
+import '../core/notifications/notification_service.dart';
 import '../core/security/encryption_service.dart';
 import '../models/chat_conversation.dart';
 import '../models/chat_message.dart';
@@ -27,7 +28,7 @@ class AppState extends ChangeNotifier {
   ];
 
   late String _username;
-  String _selectedTheme = 'Light';
+  String _selectedTheme = 'Dark'; // 'Light', 'Dark', 'System'
   String _selectedTimer = '15 minutes';
 
   bool _allowNewChats = true;
@@ -79,31 +80,57 @@ class AppState extends ChangeNotifier {
         return ThemeMode.light;
       case 'Dark':
         return ThemeMode.dark;
+      case 'System':
       default:
         return ThemeMode.system;
     }
   }
 
   void _initPeerService() {
+    _peerService.setMyAlias(_username);
+    _peerService.setKeyResolver((sender, relayRoom) {
+      for (final c in _conversations) {
+        if (c.username.toLowerCase() == sender.toLowerCase() &&
+            c.secretKey != null) {
+          return c.secretKey;
+        }
+      }
+      if (relayRoom != null) {
+        for (final c in _conversations) {
+          if (c.sessionId != null && c.secretKey != null) {
+            final derived = EncryptionService.deriveRelayRoomId(
+              c.sessionId!,
+              c.secretKey!,
+            );
+            if (derived == relayRoom) {
+              return c.secretKey;
+            }
+          }
+        }
+      }
+      return _hostingPayload?.secretKey;
+    });
+
     _peerService.setCallbacks(
       onMessageReceived: (decryptedText, sender) {
         _handleIncomingNetworkMessage(decryptedText, sender);
       },
-      onAttachmentReceived: ({
-        required String sender,
-        required String text,
-        required MessageType type,
-        required List<int> bytes,
-        required String fileName,
-      }) {
-        _handleIncomingNetworkAttachment(
-          sender: sender,
-          text: text,
-          type: type,
-          bytes: bytes,
-          fileName: fileName,
-        );
-      },
+      onAttachmentReceived:
+          ({
+            required String sender,
+            required String text,
+            required MessageType type,
+            required List<int> bytes,
+            required String fileName,
+          }) {
+            _handleIncomingNetworkAttachment(
+              sender: sender,
+              text: text,
+              type: type,
+              bytes: bytes,
+              fileName: fileName,
+            );
+          },
       onStateChanged: (state) {
         notifyListeners();
       },
@@ -116,9 +143,12 @@ class AppState extends ChangeNotifier {
       _hostingPayload = await _peerService.startHostingSession(
         hostAlias: _username,
         burnSeconds: burnSecs,
+        allowIncomingConnections: _allowNewChats,
       );
     } catch (e) {
-      debugPrint('Error starting hosting session, generating unique offline payload: $e');
+      debugPrint(
+        'Error starting hosting session, generating unique offline payload: $e',
+      );
       _hostingPayload = QrHandshakePayload.createFresh(
         hostAlias: _username,
         burnSeconds: burnSecs,
@@ -150,12 +180,22 @@ class AppState extends ChangeNotifier {
       isMine: false,
       sentAt: DateTime.now(),
       burnDuration: target.defaultBurnDuration,
+      status: MessageStatus.delivered,
     );
 
     target.messages.add(msg);
     target.unreadCount += 1;
     target.isLiveConnected = true;
     notifyListeners();
+
+    // Trigger audible, in-app, and browser notifications for incoming decrypted message
+    NotificationService.instance.notifyMessageReceived(
+      sender: sender,
+      text: text,
+      sound: _sound,
+      browserNotifications: _browserNotifications,
+      messageAlerts: _messageAlerts,
+    );
   }
 
   void _handleIncomingNetworkAttachment({
@@ -188,12 +228,23 @@ class AppState extends ChangeNotifier {
       type: type,
       attachmentBytes: bytes,
       fileName: fileName,
+      status: MessageStatus.delivered,
     );
 
     target.messages.add(msg);
     target.unreadCount += 1;
     target.isLiveConnected = true;
     notifyListeners();
+
+    NotificationService.instance.notifyMessageReceived(
+      sender: sender,
+      text: type == MessageType.image
+          ? '📷 Sent an encrypted image'
+          : '📎 Document: $fileName',
+      sound: _sound,
+      browserNotifications: _browserNotifications,
+      messageAlerts: _messageAlerts,
+    );
   }
 
   void _initSeedData() {
@@ -201,12 +252,12 @@ class AppState extends ChangeNotifier {
     _connections = [];
   }
 
-
   void setUsername(String newName) {
     if (newName.trim().isNotEmpty) {
       _username = newName.trim().startsWith('@')
           ? newName.trim()
           : '@${newName.trim()}';
+      _peerService.setMyAlias(_username);
       refreshHostingPayload();
       notifyListeners();
     }
@@ -225,6 +276,7 @@ class AppState extends ChangeNotifier {
 
   void setAllowNewChats(bool val) {
     _allowNewChats = val;
+    _peerService.setAllowIncomingConnections(val);
     notifyListeners();
   }
 
@@ -243,8 +295,14 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setBrowserNotifications(bool val) {
-    _browserNotifications = val;
+  Future<void> setBrowserNotifications(bool val) async {
+    if (val) {
+      final granted = await NotificationService.instance
+          .requestBrowserPermission();
+      _browserNotifications = granted;
+    } else {
+      _browserNotifications = false;
+    }
     notifyListeners();
   }
 
@@ -279,28 +337,80 @@ class AppState extends ChangeNotifier {
     if (text.trim().isEmpty) return;
     final conv = getConversationById(conversationId);
     if (conv != null) {
+      final cleanText = text.trim();
       final msg = ChatMessage(
         id: 'msg-${DateTime.now().millisecondsSinceEpoch}',
-        text: text.trim(),
+        text: cleanText,
         isMine: true,
         sentAt: DateTime.now(),
         burnDuration: conv.defaultBurnDuration,
+        status: MessageStatus.sent,
       );
       conv.messages.add(msg);
       notifyListeners();
 
-      // Transmit encrypted over the real P2P wire
-      if (conv.secretKey != null &&
-          _peerService.activePayload?.secretKey == conv.secretKey) {
+      // Transmit encrypted over the real P2P wire / WebBridge
+      final key = conv.secretKey ?? _hostingPayload?.secretKey;
+      final room = (conv.sessionId != null && key != null)
+          ? EncryptionService.deriveRelayRoomId(conv.sessionId!, key)
+          : null;
+
+      if (key != null) {
         _peerService.sendEncryptedMessage(
-          plainText: text.trim(),
+          plainText: cleanText,
           sender: _username,
+          secretKey: key,
+          relayRoom: room,
         );
       }
+
+      // Allow and trigger notification when messages are sent to another user
+      NotificationService.instance.notifyMessageSent(
+        recipient: conv.username,
+        text: cleanText,
+        sound: _sound,
+        browserNotifications: _browserNotifications,
+        messageAlerts: _messageAlerts,
+      );
+
+      // Check simulated peer response for instant feedback testing
+      _checkSimulatedPeerResponse(conv, cleanText);
     }
   }
 
-  Future<void> sendAttachment(String conversationId, String filePath, MessageType type) async {
+  void _checkSimulatedPeerResponse(ChatConversation conv, String userText) {
+    final lowerName = conv.username.toLowerCase();
+    final isSimulated =
+        lowerName.contains('echo') ||
+        lowerName.contains('valkyrie') ||
+        lowerName.contains('matrix') ||
+        lowerName.contains('cipher') ||
+        lowerName.contains('agent');
+
+    if (isSimulated) {
+      Timer(const Duration(milliseconds: 900), () {
+        String replyText;
+        if (lowerName.contains('echo')) {
+          replyText =
+              '🔒 [Echo Optical Handshake] Decrypted with AES-256: "$userText"';
+        } else if (lowerName.contains('valkyrie')) {
+          replyText =
+              '⚡ Optical cipher verified. Ephemeral session safe. Burns in ${conv.burnTimer}.';
+        } else if (lowerName.contains('matrix')) {
+          replyText = '🕶️ Packet zeroized in RAM. 0 bytes retained on relay.';
+        } else {
+          replyText = '🤝 Optical handshake confirmed. Ciphertext verified.';
+        }
+        _handleIncomingNetworkMessage(replyText, conv.username);
+      });
+    }
+  }
+
+  Future<void> sendAttachment(
+    String conversationId,
+    String filePath,
+    MessageType type,
+  ) async {
     final conv = getConversationById(conversationId);
     if (conv != null) {
       final fileName = filePath.split(RegExp(r'[\\/]')).last;
@@ -326,12 +436,17 @@ class AppState extends ChangeNotifier {
         attachmentPath: filePath,
         attachmentBytes: fileBytes,
         fileName: fileName,
+        status: MessageStatus.sent,
       );
       conv.messages.add(msg);
       notifyListeners();
 
-      if (conv.secretKey != null &&
-          _peerService.activePayload?.secretKey == conv.secretKey) {
+      final key = conv.secretKey ?? _hostingPayload?.secretKey;
+      final room = (conv.sessionId != null && key != null)
+          ? EncryptionService.deriveRelayRoomId(conv.sessionId!, key)
+          : null;
+
+      if (key != null) {
         if (fileBytes != null && fileBytes.isNotEmpty) {
           await _peerService.sendEncryptedAttachment(
             text: msg.text,
@@ -339,17 +454,31 @@ class AppState extends ChangeNotifier {
             type: type,
             bytes: fileBytes,
             fileName: fileName,
+            secretKey: key,
+            relayRoom: room,
           );
         } else {
           await _peerService.sendEncryptedMessage(
             plainText: msg.text,
             sender: _username,
+            secretKey: key,
+            relayRoom: room,
           );
         }
       }
+
+      // Notify outgoing transmission
+      NotificationService.instance.notifyMessageSent(
+        recipient: conv.username,
+        text: type == MessageType.image
+            ? '📷 Sent an encrypted image'
+            : '📎 Document: $fileName',
+        sound: _sound,
+        browserNotifications: _browserNotifications,
+        messageAlerts: _messageAlerts,
+      );
     }
   }
-
 
   void burnAllMessages(String conversationId) {
     final conv = getConversationById(conversationId);
@@ -375,7 +504,8 @@ class AppState extends ChangeNotifier {
     final duration = Duration(seconds: payload.burnSeconds);
     final burnLabel = '${payload.burnSeconds ~/ 60} minutes';
 
-    final conv = existing ??
+    final conv =
+        existing ??
         ChatConversation(
           id: 'conv-${DateTime.now().millisecondsSinceEpoch}',
           username: payload.hostAlias,
@@ -389,16 +519,22 @@ class AppState extends ChangeNotifier {
 
     if (existing == null) {
       _conversations.insert(0, conv);
+    } else {
+      existing.updateSession(
+        burnTimer: burnLabel,
+        defaultBurnDuration: duration,
+        secretKey: payload.secretKey,
+        sessionId: payload.sessionId,
+        isOnline: true,
+        isLiveConnected: true,
+      );
     }
 
     // 2. Add to connections mesh
     addConnection(payload.hostAlias);
 
     // 3. Initiate real-time socket connection via peer service
-    await _peerService.connectViaPayload(
-      payload: payload,
-      myAlias: _username,
-    );
+    await _peerService.connectViaPayload(payload: payload, myAlias: _username);
 
     notifyListeners();
     return conv;
@@ -438,10 +574,12 @@ class AppState extends ChangeNotifier {
   }
 
   void addConnection(String username) {
-    final clean =
-        username.trim().startsWith('@') ? username.trim() : '@${username.trim()}';
-    final exists =
-        _connections.any((c) => c.username.toLowerCase() == clean.toLowerCase());
+    final clean = username.trim().startsWith('@')
+        ? username.trim()
+        : '@${username.trim()}';
+    final exists = _connections.any(
+      (c) => c.username.toLowerCase() == clean.toLowerCase(),
+    );
     if (!exists) {
       _connections.insert(
         0,

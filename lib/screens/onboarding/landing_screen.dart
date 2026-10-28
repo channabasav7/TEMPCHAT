@@ -11,10 +11,16 @@ class LandingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bgColor = Theme.of(context).scaffoldBackgroundColor;
+    final cardColor = Theme.of(context).cardColor;
+    final borderColor = Theme.of(context).dividerColor;
+    final textColor = Theme.of(context).colorScheme.onSurface;
+    final mutedColor = Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6);
+
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: AppColors.bg,
+        backgroundColor: bgColor,
         elevation: 0,
         titleSpacing: 16,
         title: Row(
@@ -23,7 +29,7 @@ class LandingScreen extends StatelessWidget {
               width: 24,
               height: 24,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: textColor,
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Center(
@@ -31,17 +37,17 @@ class LandingScreen extends StatelessWidget {
                   width: 10,
                   height: 10,
                   decoration: BoxDecoration(
-                    color: AppColors.bg,
+                    color: bgColor,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
             ),
             const SizedBox(width: 10),
-            const Text(
+            Text(
               'TempChat',
               style: TextStyle(
-                color: Colors.white,
+                color: textColor,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -56,10 +62,10 @@ class LandingScreen extends StatelessWidget {
                   ),
                 );
               },
-              child: const Text(
+              child: Text(
                 'Open app',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: textColor,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
@@ -78,19 +84,19 @@ class LandingScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppColors.card,
+                  color: cardColor,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: borderColor),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.shield_outlined, size: 14, color: AppColors.primaryOrange),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     Text(
                       'No phone. No email. No trace.',
                       style: TextStyle(
-                        color: AppColors.muted,
+                        color: mutedColor,
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
@@ -101,16 +107,16 @@ class LandingScreen extends StatelessWidget {
               const SizedBox(height: 24),
 
               // Hero Title
-              const Text(
+              Text(
                 'Say it.',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: textColor,
                   fontSize: 42,
                   fontWeight: FontWeight.w800,
                   height: 1.1,
                 ),
               ),
-              const Text(
+              Text(
                 'Then let it go.',
                 style: TextStyle(
                   color: AppColors.primaryOrange,
@@ -122,10 +128,10 @@ class LandingScreen extends StatelessWidget {
               const SizedBox(height: 20),
 
               // Subtitle
-              const Text(
+              Text(
                 'TempChat is private messaging for moments, not archives. Pick a username, share your QR, and every message quietly burns away on your timer.',
                 style: TextStyle(
-                  color: AppColors.muted,
+                  color: mutedColor,
                   fontSize: 15,
                   height: 1.5,
                 ),
@@ -175,9 +181,9 @@ class LandingScreen extends StatelessWidget {
                       );
                     },
                     style: OutlinedButton.styleFrom(
-                      backgroundColor: AppColors.card,
-                      foregroundColor: Colors.white,
-                      side: const BorderSide(color: AppColors.border),
+                      backgroundColor: cardColor,
+                      foregroundColor: textColor,
+                      side: BorderSide(color: borderColor),
                       shape: const StadiumBorder(),
                       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
                     ),
@@ -196,6 +202,7 @@ class LandingScreen extends StatelessWidget {
                 child: Row(
                   children: [
                     _buildStepItem(
+                      context,
                       '1',
                       'Get username',
                       onTap: () {
@@ -209,6 +216,7 @@ class LandingScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: 16),
                     _buildStepItem(
+                      context,
                       '2',
                       'Get QR',
                       onTap: () {
@@ -222,6 +230,7 @@ class LandingScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: 16),
                     _buildStepItem(
+                      context,
                       '3',
                       'Scan',
                       onTap: () {
@@ -235,6 +244,7 @@ class LandingScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: 16),
                     _buildStepItem(
+                      context,
                       '4',
                       'Chat',
                       onTap: () {
@@ -273,7 +283,7 @@ class LandingScreen extends StatelessWidget {
     );
   }
 
-  static Widget _buildStepItem(String number, String label, {VoidCallback? onTap}) {
+  Widget _buildStepItem(BuildContext context, String number, String label, {VoidCallback? onTap}) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
@@ -303,8 +313,8 @@ class LandingScreen extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               label,
-              style: const TextStyle(
-                color: AppColors.muted,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),

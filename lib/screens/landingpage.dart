@@ -26,8 +26,9 @@ class _LandingPageState extends State<LandingPage> {
           return MaterialApp(
             title: 'TempChat',
             debugShowCheckedModeBanner: false,
-            theme: AppTheme.darkTheme,
-            themeMode: ThemeMode.dark,
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: _appState.themeMode,
             home: const LandingScreen(),
           );
         },

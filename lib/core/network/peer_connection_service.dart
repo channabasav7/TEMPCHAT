@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import '../notifications/web_bridge.dart';
 import '../security/encryption_service.dart';
 import '../../models/qr_handshake_payload.dart';
 import '../../models/chat_message.dart';
@@ -16,11 +17,17 @@ enum PeerConnectionState {
 }
 
 class PeerConnectionService {
-  static final PeerConnectionService _instance = PeerConnectionService._internal();
+  static final PeerConnectionService _instance =
+      PeerConnectionService._internal();
   factory PeerConnectionService() => _instance;
-  PeerConnectionService._internal();
+  PeerConnectionService._internal() {
+    webBridgeListenWire((raw) {
+      _handleRawWireData(raw);
+    });
+  }
 
   PeerConnectionState _state = PeerConnectionState.idle;
+  bool _allowIncomingConnections = true;
   PeerConnectionState get state => _state;
 
   HttpServer? _localServer;
@@ -33,6 +40,22 @@ class PeerConnectionService {
   String? _peerAlias;
   String? get peerAlias => _peerAlias;
 
+  String? _myAlias;
+  void setMyAlias(String alias) {
+    _myAlias = alias;
+  }
+
+  void setAllowIncomingConnections(bool allowed) {
+    _allowIncomingConnections = allowed;
+  }
+
+  String? Function(String sender, String? relayRoom)? _keyResolver;
+  void setKeyResolver(
+    String? Function(String sender, String? relayRoom) resolver,
+  ) {
+    _keyResolver = resolver;
+  }
+
   void Function(String text, String sender)? _onMessageReceived;
   void Function({
     required String sender,
@@ -40,7 +63,8 @@ class PeerConnectionService {
     required MessageType type,
     required List<int> bytes,
     required String fileName,
-  })? _onAttachmentReceived;
+  })?
+  _onAttachmentReceived;
   void Function(PeerConnectionState state)? _onStateChanged;
 
   String? _localIpCache;
@@ -54,7 +78,8 @@ class PeerConnectionService {
       required MessageType type,
       required List<int> bytes,
       required String fileName,
-    })? onAttachmentReceived,
+    })?
+    onAttachmentReceived,
   }) {
     _onMessageReceived = onMessageReceived;
     _onStateChanged = onStateChanged;
@@ -95,8 +120,10 @@ class PeerConnectionService {
   Future<QrHandshakePayload> startHostingSession({
     required String hostAlias,
     required int burnSeconds,
+    bool allowIncomingConnections = true,
   }) async {
     await disconnect();
+    _allowIncomingConnections = allowIncomingConnections;
 
     String? ip;
     int? port;
@@ -120,7 +147,9 @@ class PeerConnectionService {
           }
         });
       } catch (e) {
-        debugPrint('Direct socket server not available on this platform/network: $e');
+        debugPrint(
+          'Direct socket server not available on this platform/network: $e',
+        );
       }
     }
 
@@ -139,6 +168,10 @@ class PeerConnectionService {
   }
 
   void _handleIncomingClientSocket(WebSocket socket) {
+    if (!_allowIncomingConnections) {
+      socket.close(WebSocketStatus.policyViolation, 'New chats are disabled');
+      return;
+    }
     _connectedClients.add(socket);
     _setState(PeerConnectionState.connected);
 
@@ -193,7 +226,9 @@ class PeerConnectionService {
 
         return true;
       } catch (e) {
-        debugPrint('Direct LAN connection failed, falling back to session link: $e');
+        debugPrint(
+          'Direct LAN connection failed, falling back to session link: $e',
+        );
       }
     }
 
@@ -206,32 +241,36 @@ class PeerConnectionService {
   Future<void> sendEncryptedMessage({
     required String plainText,
     required String sender,
+    String? secretKey,
+    String? relayRoom,
   }) async {
-    if (_activePayload == null) return;
+    final keyToUse = secretKey ?? _activePayload?.secretKey;
+    if (keyToUse == null) return;
 
-    final encryptedPayload = EncryptionService.encryptText(
-      plainText,
-      _activePayload!.secretKey,
-    );
+    final encryptedPayload = EncryptionService.encryptText(plainText, keyToUse);
 
     final wireMap = {
       'protocol': QrHandshakePayload.currentProtocol,
       'sender': sender,
       'type': 'text',
       'payload': encryptedPayload.toJson(),
+      'relayRoom': relayRoom ?? _activePayload?.relayRoom,
       'timestamp': DateTime.now().toIso8601String(),
     };
 
     final wireString = jsonEncode(wireMap);
 
-    // Send to connected client sockets if hosting
+    // 1. Broadcast to other browser tabs/windows via WebBridge
+    webBridgeSendWire(wireString);
+
+    // 2. Send to connected client sockets if hosting (LAN / Native)
     for (final client in _connectedClients) {
       try {
         client.add(wireString);
       } catch (_) {}
     }
 
-    // Send to host if we are client
+    // 3. Send to host if we are client (LAN / Native)
     try {
       _socket?.add(wireString);
     } catch (_) {}
@@ -244,8 +283,11 @@ class PeerConnectionService {
     required MessageType type,
     required List<int> bytes,
     required String fileName,
+    String? secretKey,
+    String? relayRoom,
   }) async {
-    if (_activePayload == null) return;
+    final keyToUse = secretKey ?? _activePayload?.secretKey;
+    if (keyToUse == null) return;
 
     final attachmentJson = jsonEncode({
       'text': text,
@@ -256,7 +298,7 @@ class PeerConnectionService {
 
     final encryptedPayload = EncryptionService.encryptText(
       attachmentJson,
-      _activePayload!.secretKey,
+      keyToUse,
     );
 
     final wireMap = {
@@ -264,11 +306,16 @@ class PeerConnectionService {
       'sender': sender,
       'type': 'attachment',
       'payload': encryptedPayload.toJson(),
+      'relayRoom': relayRoom ?? _activePayload?.relayRoom,
       'timestamp': DateTime.now().toIso8601String(),
     };
 
     final wireString = jsonEncode(wireMap);
 
+    // 1. Broadcast to other browser tabs/windows via WebBridge
+    webBridgeSendWire(wireString);
+
+    // 2. Send to sockets
     for (final client in _connectedClients) {
       try {
         client.add(wireString);
@@ -282,21 +329,37 @@ class PeerConnectionService {
 
   /// Decrypts raw wire data using the negotiated AES-256 key
   void _handleRawWireData(String rawString) {
-    if (_activePayload == null) return;
-
     try {
       final map = jsonDecode(rawString) as Map<String, dynamic>;
       final sender = map['sender'] as String? ?? 'Peer';
+      final relayRoom = map['relayRoom'] as String?;
+
+      // Ignore echoes broadcast from ourselves!
+      if (_myAlias != null &&
+          sender.trim().toLowerCase() == _myAlias!.trim().toLowerCase()) {
+        return;
+      }
+
+      final keyToUse =
+          _keyResolver?.call(sender, relayRoom) ?? _activePayload?.secretKey;
+      if (keyToUse == null) return;
+
       final msgType = map['type'] as String? ?? 'text';
       final payloadMap = map['payload'] as Map<String, dynamic>;
       final encryptedPayload = EncryptedPayload.fromJson(payloadMap);
 
       final decrypted = EncryptionService.decryptText(
         encryptedPayload,
-        _activePayload!.secretKey,
+        keyToUse,
       );
 
+      // Verify that decryption was successful and not an error string
+      if (decrypted.startsWith('[Decryption Error')) {
+        return;
+      }
+
       _peerAlias = sender;
+      _setState(PeerConnectionState.connected);
 
       if (msgType == 'attachment') {
         try {
@@ -306,7 +369,9 @@ class PeerConnectionService {
           final fileName = attachData['fileName'] as String? ?? 'file';
           final base64Bytes = attachData['bytes'] as String? ?? '';
           final bytes = base64Decode(base64Bytes);
-          final type = typeStr == 'image' ? MessageType.image : MessageType.file;
+          final type = typeStr == 'image'
+              ? MessageType.image
+              : MessageType.file;
 
           _onAttachmentReceived?.call(
             sender: sender,

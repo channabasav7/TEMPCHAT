@@ -4,15 +4,15 @@ import '../core/security/encryption_service.dart';
 class ChatConversation {
   final String id;
   final String username;
-  final String burnTimer;
-  final Duration defaultBurnDuration;
-  final bool isOnline;
+  String burnTimer;
+  Duration defaultBurnDuration;
+  bool isOnline;
   int unreadCount;
   final List<ChatMessage> messages;
 
   // End-to-End Encryption fields
-  final String? secretKey;
-  final String? sessionId;
+  String? secretKey;
+  String? sessionId;
   final bool isEncrypted;
   bool isLiveConnected;
 
@@ -61,5 +61,21 @@ class ChatConversation {
     if (diff.inHours > 0) return '${diff.inHours}h';
     if (diff.inMinutes > 0) return '${diff.inMinutes}m';
     return 'now';
+  }
+
+  void updateSession({
+    required String burnTimer,
+    required Duration defaultBurnDuration,
+    required String secretKey,
+    required String sessionId,
+    required bool isOnline,
+    required bool isLiveConnected,
+  }) {
+    this.burnTimer = burnTimer;
+    this.defaultBurnDuration = defaultBurnDuration;
+    this.secretKey = secretKey;
+    this.sessionId = sessionId;
+    this.isOnline = isOnline;
+    this.isLiveConnected = isLiveConnected;
   }
 }
