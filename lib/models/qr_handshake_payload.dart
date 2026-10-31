@@ -71,6 +71,21 @@ class QrHandshakePayload {
     return 'tempchat://$base64Payload';
   }
 
+  bool get isExpired {
+    if (createdAt <= 0) return true;
+    final expiresAt = createdAt + burnSeconds;
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    return now >= expiresAt;
+  }
+
+  Duration get remainingLifetime {
+    if (createdAt <= 0) return Duration.zero;
+    final expiresAt = createdAt + burnSeconds;
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    if (expiresAt <= now) return Duration.zero;
+    return Duration(seconds: expiresAt - now);
+  }
+
   /// Parses a scanned QR string, deep link, or pasted payload with fallback support
   static QrHandshakePayload? tryParse(String raw) {
     try {
@@ -96,12 +111,14 @@ class QrHandshakePayload {
           final protocol = map['p'] as String? ?? currentProtocol;
           final burnSeconds = (map['b'] as num?)?.toInt() ?? 900;
           final hostAlias = map['a'] as String? ?? '@anonymous';
+          final createdAt = (map['t'] as num?)?.toInt() ?? 0;
           if (protocol != currentProtocol ||
               burnSeconds <= 0 ||
-              !RegExp(r'^@[A-Za-z0-9_]{1,31}$').hasMatch(hostAlias)) {
+              !RegExp(r'^@[A-Za-z0-9_]{1,31}$').hasMatch(hostAlias) ||
+              createdAt <= 0) {
             return null;
           }
-          return QrHandshakePayload(
+          final payload = QrHandshakePayload(
             protocol: protocol,
             sessionId: map['s'] as String,
             hostAlias: hostAlias,
@@ -113,10 +130,11 @@ class QrHandshakePayload {
                   map['k'] as String,
                 ),
             burnSeconds: burnSeconds,
-            createdAt: (map['t'] as num?)?.toInt() ?? 0,
+            createdAt: createdAt,
             localIp: map['ip'] as String?,
             localPort: (map['pt'] as num?)?.toInt(),
           );
+          return payload.isExpired ? null : payload;
         }
       } catch (_) {}
 

@@ -87,5 +87,19 @@ void main() {
       expect(QrHandshakePayload.tryParse(encode(unsupported)), isNull);
       expect(QrHandshakePayload.tryParse(encode(noBurn)), isNull);
     });
+
+    test('Reject expired QR payloads', () {
+      final expired = {
+        ...QrHandshakePayload.createFresh(
+          hostAlias: '@expired_peer',
+          burnSeconds: 900,
+        ).toMap(),
+        't': (DateTime.now().millisecondsSinceEpoch ~/ 1000) - 901,
+      };
+
+      final encoded =
+          'tempchat://${base64Url.encode(utf8.encode(jsonEncode(expired)))}';
+      expect(QrHandshakePayload.tryParse(encoded), isNull);
+    });
   });
 }

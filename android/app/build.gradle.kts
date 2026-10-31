@@ -18,6 +18,7 @@ if (keystorePropertiesFile.exists()) {
 extensions.configure<ApplicationExtension> {
     namespace = "com.example.viora"
     compileSdk = 37
+    
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

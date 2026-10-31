@@ -72,6 +72,7 @@ class QrDisplayCard extends StatelessWidget {
   final String? fingerprint;
   final String? sessionId;
   final double size;
+  final String? diagnosticsText;
 
   const QrDisplayCard({
     super.key,
@@ -81,6 +82,7 @@ class QrDisplayCard extends StatelessWidget {
     this.fingerprint,
     this.sessionId,
     this.size = 200,
+    this.diagnosticsText,
   });
 
   @override
@@ -120,7 +122,10 @@ class QrDisplayCard extends StatelessWidget {
                 ],
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black38,
                   borderRadius: BorderRadius.circular(12),
@@ -145,12 +150,12 @@ class QrDisplayCard extends StatelessWidget {
               alignment: Alignment.center,
               children: [
                 SizedBox(
-                  width: size + 36,
-                  height: size + 36,
+                  width: size + 40,
+                  height: size + 40,
                   child: const CustomPaint(
                     painter: CornerBracketsPainter(
                       color: AppColors.primaryOrange,
-                      cornerLength: 24,
+                      cornerLength: 26,
                       strokeWidth: 3.5,
                     ),
                   ),
@@ -175,7 +180,7 @@ class QrDisplayCard extends StatelessWidget {
                     version: QrVersions.auto,
                     size: size - 24,
                     gapless: true,
-                    errorCorrectionLevel: QrErrorCorrectLevel.M,
+                    errorCorrectionLevel: QrErrorCorrectLevel.L,
                     eyeStyle: const QrEyeStyle(
                       eyeShape: QrEyeShape.square,
                       color: Colors.black,
@@ -191,12 +196,19 @@ class QrDisplayCard extends StatelessWidget {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.error_outline, color: Colors.red, size: 28),
+                              const Icon(
+                                Icons.error_outline,
+                                color: Colors.red,
+                                size: 28,
+                              ),
                               const SizedBox(height: 6),
                               Text(
                                 'QR Generation Error\n$err',
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(color: Colors.black87, fontSize: 11),
+                                style: const TextStyle(
+                                  color: Colors.black87,
+                                  fontSize: 11,
+                                ),
                               ),
                             ],
                           ),
@@ -209,6 +221,18 @@ class QrDisplayCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
+          if (diagnosticsText != null && diagnosticsText!.isNotEmpty)
+            Text(
+              diagnosticsText!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.muted,
+                fontSize: 11,
+                fontFamily: 'monospace',
+              ),
+            ),
+          if (diagnosticsText != null && diagnosticsText!.isNotEmpty)
+            const SizedBox(height: 10),
 
           Wrap(
             alignment: WrapAlignment.center,
@@ -217,7 +241,10 @@ class QrDisplayCard extends StatelessWidget {
             children: [
               if (sessionId != null && sessionId!.isNotEmpty)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.bg,
                     borderRadius: BorderRadius.circular(10),
@@ -226,7 +253,11 @@ class QrDisplayCard extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.tag_rounded, size: 12, color: AppColors.primaryOrange),
+                      const Icon(
+                        Icons.tag_rounded,
+                        size: 12,
+                        color: AppColors.primaryOrange,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         'Session: ${sessionId!.length > 8 ? sessionId!.substring(0, 8) : sessionId}',
@@ -241,7 +272,10 @@ class QrDisplayCard extends StatelessWidget {
                 ),
               if (fingerprint != null && fingerprint!.isNotEmpty)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.bg,
                     borderRadius: BorderRadius.circular(10),
@@ -250,7 +284,11 @@ class QrDisplayCard extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.verified_user_outlined, size: 12, color: AppColors.accentGreen),
+                      const Icon(
+                        Icons.verified_user_outlined,
+                        size: 12,
+                        color: AppColors.accentGreen,
+                      ),
                       const SizedBox(width: 5),
                       Text(
                         'AES-256: $fingerprint',
