@@ -15,10 +15,7 @@ import '../navigation/main_navigation_shell.dart';
 class ChatThreadScreen extends StatefulWidget {
   final String conversationId;
 
-  const ChatThreadScreen({
-    super.key,
-    required this.conversationId,
-  });
+  const ChatThreadScreen({super.key, required this.conversationId});
 
   @override
   State<ChatThreadScreen> createState() => _ChatThreadScreenState();
@@ -165,11 +162,9 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
         imageQuality: 85,
       );
       if (picked != null && mounted) {
-        AppStateScope.of(context).sendAttachment(
-          widget.conversationId,
-          picked.path,
-          MessageType.image,
-        );
+        AppStateScope.of(
+          context,
+        ).sendAttachment(widget.conversationId, picked.path, MessageType.image);
         _scrollToBottom();
       }
     } catch (e) {
@@ -370,9 +365,15 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Row(
           children: [
-            Icon(Icons.local_fire_department_rounded, color: AppColors.accentRed),
+            Icon(
+              Icons.local_fire_department_rounded,
+              color: AppColors.accentRed,
+            ),
             SizedBox(width: 8),
-            Text('Burn Entire Chat?', style: TextStyle(color: AppColors.text, fontSize: 18)),
+            Text(
+              'Burn Entire Chat?',
+              style: TextStyle(color: AppColors.text, fontSize: 18),
+            ),
           ],
         ),
         content: const Text(
@@ -382,7 +383,10 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.muted)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.muted),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -412,9 +416,11 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
     final isMine = msg.isMine;
 
     Widget content;
-    final hasImage = msg.type == MessageType.image &&
+    final hasImage =
+        msg.type == MessageType.image &&
         (msg.attachmentBytes != null || msg.attachmentPath != null);
-    final hasFile = msg.type == MessageType.file &&
+    final hasFile =
+        msg.type == MessageType.file &&
         (msg.attachmentBytes != null || msg.attachmentPath != null);
 
     if (hasImage) {
@@ -461,7 +467,8 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
         ],
       );
     } else if (hasFile) {
-      final fileName = msg.fileName ??
+      final fileName =
+          msg.fileName ??
           (msg.attachmentPath != null
               ? msg.attachmentPath!.split('/').last.split('\\').last
               : 'Encrypted Document');
@@ -513,15 +520,27 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               if (isMine) ...[
-                const Icon(
-                  Icons.done_all_rounded,
+                Icon(
+                  msg.status == MessageStatus.failed
+                      ? Icons.error_outline_rounded
+                      : msg.status == MessageStatus.sending
+                      ? Icons.schedule_rounded
+                      : Icons.done_all_rounded,
                   size: 13,
-                  color: Colors.white70,
+                  color: msg.status == MessageStatus.failed
+                      ? Colors.red.shade200
+                      : Colors.white70,
                 ),
                 const SizedBox(width: 3),
-                const Text(
-                  'Encrypted',
-                  style: TextStyle(
+                Text(
+                  msg.status == MessageStatus.failed
+                      ? 'Not sent'
+                      : msg.status == MessageStatus.sending
+                      ? 'Sending'
+                      : msg.status == MessageStatus.delivered
+                      ? 'Delivered'
+                      : 'Sent',
+                  style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 10,
                     fontWeight: FontWeight.w500,
@@ -529,7 +548,10 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
                 ),
                 const SizedBox(width: 6),
               ],
-              BurnCountdownBadge(text: msg.remainingFormatted, isUrgent: isUrgent),
+              BurnCountdownBadge(
+                text: msg.remainingFormatted,
+                isUrgent: isUrgent,
+              ),
             ],
           ),
         ],
@@ -562,8 +584,12 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
   }
 
   // ── 1-to-1 Peer Connection Status Bar ───────────────────────────────────
-  Widget _buildConnectionStatusBar(PeerConnectionState peerState, ChatConversation conv) {
-    final bool isLive = conv.isLiveConnected &&
+  Widget _buildConnectionStatusBar(
+    PeerConnectionState peerState,
+    ChatConversation conv,
+  ) {
+    final bool isLive =
+        conv.isLiveConnected &&
         (peerState == PeerConnectionState.connected ||
             peerState == PeerConnectionState.hosting);
 
@@ -676,7 +702,8 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const MainNavigationShell(initialIndex: 0),
+                  builder: (context) =>
+                      const MainNavigationShell(initialIndex: 0),
                 ),
               );
             }
@@ -740,7 +767,11 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
                             ),
                           ),
                           const SizedBox(width: 4),
-                          const Icon(Icons.lock_rounded, size: 13, color: AppColors.accentGreen),
+                          const Icon(
+                            Icons.lock_rounded,
+                            size: 13,
+                            color: AppColors.accentGreen,
+                          ),
                         ],
                       ),
                       Text(
@@ -760,12 +791,18 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
         actions: [
           IconButton(
             tooltip: 'View encryption & fingerprint',
-            icon: const Icon(Icons.shield_outlined, color: AppColors.accentGreen),
+            icon: const Icon(
+              Icons.shield_outlined,
+              color: AppColors.accentGreen,
+            ),
             onPressed: () => _showEncryptionVerification(conv),
           ),
           IconButton(
             tooltip: 'Burn all messages now',
-            icon: const Icon(Icons.local_fire_department_outlined, color: AppColors.accentRed),
+            icon: const Icon(
+              Icons.local_fire_department_outlined,
+              color: AppColors.accentRed,
+            ),
             onPressed: () => _burnAllNow(conv),
           ),
           const SizedBox(width: 4),
@@ -779,12 +816,19 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
               onTap: () => _showEncryptionVerification(conv),
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 color: AppColors.accentGreen.withValues(alpha: 0.08),
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.lock_outline, size: 12, color: AppColors.accentGreen),
+                    Icon(
+                      Icons.lock_outline,
+                      size: 12,
+                      color: AppColors.accentGreen,
+                    ),
                     SizedBox(width: 6),
                     Text(
                       'AES-256 Verified • Tap to view safety fingerprint',
@@ -801,7 +845,6 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
 
             // ── 1-to-1 Peer Connection Status Bar ──────────────────────────
             _buildConnectionStatusBar(appState.peerConnectionState, conv),
-
 
             // Messages list
             Expanded(
@@ -845,7 +888,9 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
                   : ListView.builder(
                       controller: _scrollController,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 16),
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
                       itemCount: activeMessages.length,
                       itemBuilder: (context, index) =>
                           _buildMessageBubble(activeMessages[index]),
@@ -857,17 +902,18 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
                 color: AppColors.card,
-                border: Border(
-                  top: BorderSide(color: AppColors.border),
-                ),
+                border: Border(top: BorderSide(color: AppColors.border)),
               ),
               child: Row(
                 children: [
                   // Attach button
                   IconButton(
                     tooltip: 'Send image or file',
-                    icon: const Icon(Icons.attach_file_rounded,
-                        color: AppColors.muted, size: 22),
+                    icon: const Icon(
+                      Icons.attach_file_rounded,
+                      color: AppColors.muted,
+                      size: 22,
+                    ),
                     onPressed: _showAttachmentPicker,
                   ),
 
@@ -891,7 +937,9 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
                         decoration: const InputDecoration(
                           hintText: 'Type an encrypted message...',
                           hintStyle: TextStyle(
-                              color: AppColors.dim, fontSize: 13),
+                            color: AppColors.dim,
+                            fontSize: 13,
+                          ),
                           border: InputBorder.none,
                         ),
                       ),
@@ -906,8 +954,11 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_upward_rounded,
-                          color: Colors.white, size: 20),
+                      icon: const Icon(
+                        Icons.arrow_upward_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                       onPressed: _sendMessage,
                     ),
                   ),
@@ -942,9 +993,10 @@ class _PulsingDotState extends State<_PulsingDot>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     )..repeat(reverse: true);
-    _anim = Tween<double>(begin: 0.4, end: 1.0).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
-    );
+    _anim = Tween<double>(
+      begin: 0.4,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
   }
 
   @override

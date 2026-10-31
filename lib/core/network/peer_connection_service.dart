@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../notifications/web_bridge.dart';
 import '../security/encryption_service.dart';
+import 'firebase_relay_service.dart';
 import '../../models/qr_handshake_payload.dart';
 import '../../models/chat_message.dart';
 
@@ -33,6 +34,7 @@ class PeerConnectionService {
   HttpServer? _localServer;
   WebSocket? _socket;
   final List<WebSocket> _connectedClients = [];
+  final FirebaseRelayService _firebaseRelay = FirebaseRelayService();
 
   QrHandshakePayload? _activePayload;
   QrHandshakePayload? get activePayload => _activePayload;
@@ -232,20 +234,35 @@ class PeerConnectionService {
       }
     }
 
-    // Connected state via active handshake
-    _setState(PeerConnectionState.connected);
-    return true;
+    // A QR handshake alone is not an Internet transport. Do not report a
+    // connection until a relay has actually been established.
+    try {
+      await _firebaseRelay.connect(
+        roomId: payload.relayRoom,
+        onWire: _handleRawWireData,
+      );
+      _setState(PeerConnectionState.connected);
+      await sendEncryptedMessage(
+        plainText: 'Optical handshake established. Connected securely.',
+        sender: myAlias,
+      );
+      return true;
+    } catch (e) {
+      debugPrint('Firebase relay connection failed: $e');
+      _setState(PeerConnectionState.error);
+      return false;
+    }
   }
 
   /// Sends plaintext by encrypting with AES-256 before transmitting over the wire
-  Future<void> sendEncryptedMessage({
+  Future<bool> sendEncryptedMessage({
     required String plainText,
     required String sender,
     String? secretKey,
     String? relayRoom,
   }) async {
     final keyToUse = secretKey ?? _activePayload?.secretKey;
-    if (keyToUse == null) return;
+    if (keyToUse == null) return false;
 
     final encryptedPayload = EncryptionService.encryptText(plainText, keyToUse);
 
@@ -262,22 +279,34 @@ class PeerConnectionService {
 
     // 1. Broadcast to other browser tabs/windows via WebBridge
     webBridgeSendWire(wireString);
+    var transmitted = _firebaseRelay.isConnected;
+    try {
+      await _sendToRelay(wireString);
+    } catch (e) {
+      debugPrint('Firebase relay send failed: $e');
+      transmitted = false;
+    }
 
     // 2. Send to connected client sockets if hosting (LAN / Native)
     for (final client in _connectedClients) {
       try {
         client.add(wireString);
+        transmitted = true;
       } catch (_) {}
     }
 
     // 3. Send to host if we are client (LAN / Native)
     try {
-      _socket?.add(wireString);
+      if (_socket != null) {
+        _socket!.add(wireString);
+        transmitted = true;
+      }
     } catch (_) {}
+    return transmitted;
   }
 
   /// Sends file or image attachment encrypted with AES-256 over the wire
-  Future<void> sendEncryptedAttachment({
+  Future<bool> sendEncryptedAttachment({
     required String text,
     required String sender,
     required MessageType type,
@@ -287,7 +316,7 @@ class PeerConnectionService {
     String? relayRoom,
   }) async {
     final keyToUse = secretKey ?? _activePayload?.secretKey;
-    if (keyToUse == null) return;
+    if (keyToUse == null) return false;
 
     final attachmentJson = jsonEncode({
       'text': text,
@@ -314,17 +343,35 @@ class PeerConnectionService {
 
     // 1. Broadcast to other browser tabs/windows via WebBridge
     webBridgeSendWire(wireString);
+    var transmitted = _firebaseRelay.isConnected;
+    try {
+      await _sendToRelay(wireString);
+    } catch (e) {
+      debugPrint('Firebase relay attachment send failed: $e');
+      transmitted = false;
+    }
 
     // 2. Send to sockets
     for (final client in _connectedClients) {
       try {
         client.add(wireString);
+        transmitted = true;
       } catch (_) {}
     }
 
     try {
-      _socket?.add(wireString);
+      if (_socket != null) {
+        _socket!.add(wireString);
+        transmitted = true;
+      }
     } catch (_) {}
+    return transmitted;
+  }
+
+  Future<void> _sendToRelay(String wireString) async {
+    if (_firebaseRelay.isConnected) {
+      await _firebaseRelay.send(wireString);
+    }
   }
 
   /// Decrypts raw wire data using the negotiated AES-256 key
@@ -410,6 +457,7 @@ class PeerConnectionService {
       await _localServer?.close(force: true);
     } catch (_) {}
     _localServer = null;
+    await _firebaseRelay.disconnect();
 
     _activePayload = null;
     _peerAlias = null;

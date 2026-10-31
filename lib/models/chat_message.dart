@@ -1,5 +1,6 @@
 enum MessageType { text, image, file }
-enum MessageStatus { sending, sent, delivered }
+
+enum MessageStatus { sending, sent, delivered, failed }
 
 class ChatMessage {
   final String id;
@@ -8,7 +9,7 @@ class ChatMessage {
   final DateTime sentAt;
   final Duration burnDuration;
   final MessageType type;
-  final MessageStatus status;
+  MessageStatus status;
   final String? attachmentPath; // local file path for image/file messages
   final List<int>? attachmentBytes; // raw bytes for cross-device display
   final String? fileName; // original file name

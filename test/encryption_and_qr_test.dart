@@ -43,6 +43,21 @@ void main() {
       // Format should contain space-separated hex chunks
       expect(fingerprint.length, greaterThanOrEqualTo(16));
     });
+
+    test('Rejects tampered authenticated ciphertext', () {
+      final key = EncryptionService.generateSessionKey();
+      final encrypted = EncryptionService.encryptText('secret', key);
+      final tampered = EncryptedPayload(
+        ciphertext:
+            '${encrypted.ciphertext.substring(0, encrypted.ciphertext.length - 2)}AA',
+        iv: encrypted.iv,
+      );
+
+      expect(
+        EncryptionService.decryptText(tampered, key),
+        contains('Decryption Error'),
+      );
+    });
   });
 
   group('QrHandshakePayload Tests', () {

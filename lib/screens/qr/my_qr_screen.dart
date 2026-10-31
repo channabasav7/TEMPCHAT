@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/qr/qr_download_service.dart';
 import '../../state/app_state.dart';
 import '../../widgets/custom_qr_painter.dart';
 
@@ -37,6 +38,26 @@ class _MyQrScreenState extends State<MyQrScreen> {
         content: Text('Copied encrypted session payload to clipboard!'),
         backgroundColor: AppColors.card,
         duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Future<void> _downloadQr(String payloadString) async {
+    if (payloadString.isEmpty) return;
+    final downloaded = await downloadQrImage(
+      data: payloadString,
+      filename: 'tempchat-qr.png',
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          downloaded
+              ? 'QR image downloaded. Share it only with the intended peer.'
+              : 'QR download is available on the web. Use Copy Key instead.',
+        ),
+        backgroundColor: AppColors.card,
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -160,6 +181,23 @@ class _MyQrScreenState extends State<MyQrScreen> {
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: encodedPayload.isEmpty
+                        ? null
+                        : () => _downloadQr(encodedPayload),
+                    icon: const Icon(Icons.download_rounded, size: 18),
+                    label: const Text('Download QR image'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _textColor,
+                      side: BorderSide(color: _borderColor),
+                      shape: const StadiumBorder(),
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 24),
 

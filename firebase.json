@@ -27,5 +27,29 @@
         ]
       }
     ]
+  },
+  "database": {
+    "rules": "database.rules.json"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "tempchat-1cd4f",
+          "appId": "1:200277215305:android:dac086c4481aa030bd1798",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "tempchat-1cd4f",
+          "configurations": {
+            "android": "1:200277215305:android:dac086c4481aa030bd1798",
+            "ios": "1:200277215305:ios:dac5b41530c81e0bbd1798",
+            "web": "1:200277215305:web:b20bfb1d5b515a83bd1798"
+          }
+        }
+      }
+    }
   }
 }

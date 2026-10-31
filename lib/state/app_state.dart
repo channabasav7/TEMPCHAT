@@ -28,7 +28,7 @@ class AppState extends ChangeNotifier {
   ];
 
   late String _username;
-  String _selectedTheme = 'Dark'; // 'Light', 'Dark', 'System'
+  String _selectedTheme = 'Dark'; // 'Light' or 'Dark'
   String _selectedTimer = '15 minutes';
 
   bool _allowNewChats = true;
@@ -75,15 +75,7 @@ class AppState extends ChangeNotifier {
   PeerConnectionState get peerConnectionState => _peerService.state;
 
   ThemeMode get themeMode {
-    switch (_selectedTheme) {
-      case 'Light':
-        return ThemeMode.light;
-      case 'Dark':
-        return ThemeMode.dark;
-      case 'System':
-      default:
-        return ThemeMode.system;
-    }
+    return _selectedTheme == 'Light' ? ThemeMode.light : ThemeMode.dark;
   }
 
   void _initPeerService() {
@@ -333,7 +325,7 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  void sendMessage(String conversationId, String text) {
+  Future<void> sendMessage(String conversationId, String text) async {
     if (text.trim().isEmpty) return;
     final conv = getConversationById(conversationId);
     if (conv != null) {
@@ -344,7 +336,7 @@ class AppState extends ChangeNotifier {
         isMine: true,
         sentAt: DateTime.now(),
         burnDuration: conv.defaultBurnDuration,
-        status: MessageStatus.sent,
+        status: MessageStatus.sending,
       );
       conv.messages.add(msg);
       notifyListeners();
@@ -356,13 +348,17 @@ class AppState extends ChangeNotifier {
           : null;
 
       if (key != null) {
-        _peerService.sendEncryptedMessage(
+        final transmitted = await _peerService.sendEncryptedMessage(
           plainText: cleanText,
           sender: _username,
           secretKey: key,
           relayRoom: room,
         );
+        msg.status = transmitted ? MessageStatus.sent : MessageStatus.failed;
+      } else {
+        msg.status = MessageStatus.failed;
       }
+      notifyListeners();
 
       // Allow and trigger notification when messages are sent to another user
       NotificationService.instance.notifyMessageSent(
@@ -436,7 +432,7 @@ class AppState extends ChangeNotifier {
         attachmentPath: filePath,
         attachmentBytes: fileBytes,
         fileName: fileName,
-        status: MessageStatus.sent,
+        status: MessageStatus.sending,
       );
       conv.messages.add(msg);
       notifyListeners();
@@ -448,7 +444,7 @@ class AppState extends ChangeNotifier {
 
       if (key != null) {
         if (fileBytes != null && fileBytes.isNotEmpty) {
-          await _peerService.sendEncryptedAttachment(
+          final transmitted = await _peerService.sendEncryptedAttachment(
             text: msg.text,
             sender: _username,
             type: type,
@@ -457,15 +453,20 @@ class AppState extends ChangeNotifier {
             secretKey: key,
             relayRoom: room,
           );
+          msg.status = transmitted ? MessageStatus.sent : MessageStatus.failed;
         } else {
-          await _peerService.sendEncryptedMessage(
+          final transmitted = await _peerService.sendEncryptedMessage(
             plainText: msg.text,
             sender: _username,
             secretKey: key,
             relayRoom: room,
           );
+          msg.status = transmitted ? MessageStatus.sent : MessageStatus.failed;
         }
+      } else {
+        msg.status = MessageStatus.failed;
       }
+      notifyListeners();
 
       // Notify outgoing transmission
       NotificationService.instance.notifyMessageSent(
@@ -513,8 +514,8 @@ class AppState extends ChangeNotifier {
           defaultBurnDuration: duration,
           secretKey: payload.secretKey,
           sessionId: payload.sessionId,
-          isOnline: true,
-          isLiveConnected: true,
+          isOnline: false,
+          isLiveConnected: false,
         );
 
     if (existing == null) {
@@ -525,8 +526,8 @@ class AppState extends ChangeNotifier {
         defaultBurnDuration: duration,
         secretKey: payload.secretKey,
         sessionId: payload.sessionId,
-        isOnline: true,
-        isLiveConnected: true,
+        isOnline: false,
+        isLiveConnected: false,
       );
     }
 
@@ -534,7 +535,12 @@ class AppState extends ChangeNotifier {
     addConnection(payload.hostAlias);
 
     // 3. Initiate real-time socket connection via peer service
-    await _peerService.connectViaPayload(payload: payload, myAlias: _username);
+    final connected = await _peerService.connectViaPayload(
+      payload: payload,
+      myAlias: _username,
+    );
+    conv.isOnline = connected;
+    conv.isLiveConnected = connected;
 
     notifyListeners();
     return conv;

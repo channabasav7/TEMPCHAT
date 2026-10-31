@@ -2,7 +2,7 @@ import 'dart:convert';
 import '../core/security/encryption_service.dart';
 
 class QrHandshakePayload {
-  static const String currentProtocol = 'tempchat-v1';
+  static const String currentProtocol = 'tempchat-v2';
 
   final String protocol;
   final String sessionId;

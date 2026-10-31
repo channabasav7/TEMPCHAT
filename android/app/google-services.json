@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "200277215305",
+    "project_id": "tempchat-1cd4f",
+    "storage_bucket": "tempchat-1cd4f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:200277215305:android:dac086c4481aa030bd1798",
+        "android_client_info": {
+          "package_name": "com.example.viora"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAqOXMTzXNofmPukmFheDhuRiUn6B_fhyg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -53,7 +53,9 @@ class SettingsScreen extends StatelessWidget {
                     backgroundColor: AppColors.cardLight,
                     child: Text(
                       appState.username.replaceAll('@', '').isNotEmpty
-                          ? appState.username.replaceAll('@', '')[0].toUpperCase()
+                          ? appState.username
+                                .replaceAll('@', '')[0]
+                                .toUpperCase()
                           : '?',
                       style: const TextStyle(
                         color: AppColors.text,
@@ -78,7 +80,10 @@ class SettingsScreen extends StatelessWidget {
                         const SizedBox(height: 2),
                         const Text(
                           'Temporary disposable handle',
-                          style: TextStyle(color: AppColors.muted, fontSize: 12),
+                          style: TextStyle(
+                            color: AppColors.muted,
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
@@ -125,7 +130,10 @@ class SettingsScreen extends StatelessWidget {
                         SizedBox(height: 4),
                         Text(
                           'New chats start with this burn time.',
-                          style: TextStyle(color: AppColors.muted, fontSize: 12),
+                          style: TextStyle(
+                            color: AppColors.muted,
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
@@ -133,7 +141,9 @@ class SettingsScreen extends StatelessWidget {
                   const SizedBox(width: 12),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 4),
+                      horizontal: 14,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.cardLight,
                       borderRadius: BorderRadius.circular(20),
@@ -159,19 +169,20 @@ class SettingsScreen extends StatelessWidget {
                         onChanged: (String? val) {
                           if (val != null) appState.setDefaultTimer(val);
                         },
-                        items: <String>[
-                          '1 minute',
-                          '5 minutes',
-                          '15 minutes',
-                          '1 hour',
-                          '6 hours',
-                          '24 hours',
-                        ].map<DropdownMenuItem<String>>((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value),
-                          );
-                        }).toList(),
+                        items:
+                            <String>[
+                              '1 minute',
+                              '5 minutes',
+                              '15 minutes',
+                              '1 hour',
+                              '6 hours',
+                              '24 hours',
+                            ].map<DropdownMenuItem<String>>((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(value),
+                              );
+                            }).toList(),
                       ),
                     ),
                   ),
@@ -258,9 +269,9 @@ class SettingsScreen extends StatelessWidget {
                 children: [
                   _buildDropdownTile(
                     title: 'Theme',
-                    subtitle: 'Choose light, dark, or system default.',
+                    subtitle: 'Switch between the white and dark themes.',
                     value: appState.selectedTheme,
-                    items: const ['System', 'Light', 'Dark'],
+                    items: const ['Light', 'Dark'],
                     onChanged: appState.setTheme,
                   ),
                 ],
@@ -273,13 +284,17 @@ class SettingsScreen extends StatelessWidget {
               width: double.infinity,
               child: OutlinedButton.icon(
                 onPressed: () => _wipeSessionDialog(context, appState),
-                icon: const Icon(Icons.delete_forever_rounded,
-                    color: AppColors.accentRed, size: 20),
+                icon: const Icon(
+                  Icons.delete_forever_rounded,
+                  color: AppColors.accentRed,
+                  size: 20,
+                ),
                 label: const Text(
                   'Nuke All Session Data',
                   style: TextStyle(
-                      color: AppColors.accentRed,
-                      fontWeight: FontWeight.bold),
+                    color: AppColors.accentRed,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: AppColors.accentRed),
@@ -302,8 +317,10 @@ class SettingsScreen extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.card,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Change Alias',
-            style: TextStyle(color: AppColors.text, fontSize: 18)),
+        title: const Text(
+          'Change Alias',
+          style: TextStyle(color: AppColors.text, fontSize: 18),
+        ),
         content: TextField(
           controller: controller,
           style: const TextStyle(color: AppColors.text),
@@ -315,8 +332,10 @@ class SettingsScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel',
-                style: TextStyle(color: AppColors.muted)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.muted),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -342,8 +361,10 @@ class SettingsScreen extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.card,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Nuke All Data?',
-            style: TextStyle(color: AppColors.accentRed, fontSize: 18)),
+        title: const Text(
+          'Nuke All Data?',
+          style: TextStyle(color: AppColors.accentRed, fontSize: 18),
+        ),
         content: const Text(
           'This will purge all chats, connections, and reset your identity immediately.',
           style: TextStyle(color: AppColors.muted, fontSize: 13),
@@ -351,8 +372,10 @@ class SettingsScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child:
-                const Text('Cancel', style: TextStyle(color: AppColors.muted)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.muted),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
